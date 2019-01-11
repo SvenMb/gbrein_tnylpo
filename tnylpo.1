@@ -1,0 +1,1383 @@
+.\"
+.\" Copyright (c) 2019 Georg Brein. All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright notice,
+.\"    this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived from
+.\"    this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+.\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+.\" LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+.\" CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+.\" SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+.\" INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+.\" CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH tnylpo 1 2019-01-11
+.SH NAME
+tnylpo \- a utility to run programs witten for CP/M-80
+.SH SYNOPSIS
+.HP
+.B tnylpo 
+.RB [ -abnrsw ]
+.RB [ -c
+.RI ( <n>
+|
+.BR @ )]
+.RB [ -d
+.IR <drive> ]
+.RB [ -f
+.IR <config-file> ]
+.RB [ -l
+.RI ( <n>
+|
+.BR @ )]
+.RB [ -t
+.RI ( <n>
+.B |
+.BR @ )]
+.RB [ -v
+.IR <level> ]
+.IR <command>
+.RI [ <arg>
+.RI ...]
+.HP
+.B tnylpo -h
+.SH DESCRIPTION
+tnylpo allows the execution of programs written for the CP/M-80 operating
+system in a Unix environment. To accomplish this task, tnylpo combines an
+emulation of the Zilog Z80 eight-bit CPU which a software layer translating
+calls to the CP/M application programming interface (the BDOS and 
+BIOS calls of CP/M-80 version 2.2) to Unix library and system calls.
+.PP
+tnylpo doesn't even try to re-create the look-and-feel of the CP/M-80
+operating system by emulating its Console Command Processor (CCP) or providing
+implementations of utility programs like
+.B PIP
+or
+.BR STAT ;
+in fact, its aim
+is to integrate CP/M-80 applications and compilers as much as possible
+into the Unix command line
+interface to allow their use in combination with the much more capable
+utilities and editors of the host operating system; tnylpo users are
+supposed to use
+.BR cp (1)
+and
+.BR dd (1)
+instead of
+.BR PIP ,
+.BR chmod (1),
+.BR df (1),
+and
+.BR ls (1)
+instead of
+.BR STAT ,
+and shell scripts,
+.IR here -documents,
+and redirections instead of
+.B SUBMIT
+and
+.BR XSUB .
+.PP
+Files in the CP/M environment are directly mapped to Unix files; while this
+comes at the cost of some minor incompatibilities with CP/M-80 (see below
+under NOTES), it vastly simplifies the interaction between CP/M and
+Unix programs compared to the alternative approach of using disk images.
+.PP
+Thanks to its system call translation layer, tnylpo neither contains any
+code from the CP/M operating system nor needs any additional software
+apart from the actual applications it is meant to run.
+.PP
+Since CP/M-80 programs can use eight-bit characters at best (many of them
+even share CP/Ms own firm belief in a seven-bit ASCII world), another
+translation
+layer mediates between the internal one-byte-per-character text representation
+and the almost universal multibyte character (most commonly UTF-8 based)
+approach of contemporary Unix
+systems. This translation layer affects CP/Ms character orientated I/O
+channels only and may be disabled for the printer, punch, and reader devices.
+.PP
+All screen-orientated CP/M-80 programs are unable to cope with the ability of
+graphical user interfaces to resize text windows (in fact, even the ability of
+the DEC VT100 to switch between 80 and 132 column mode overtaxes them); to
+alleviate this problem (and to provide the capability of running the same
+CP/M application on different terminal emulations or on 
+serial terminals without reconfiguring the CP/M binaries), tnylpo includes
+a
+.B ncurses
+based emulation of the DEC VT52 terminal (with certain extensions in
+functionality) for use as CP/M console device. tnylpo gives the user the
+choice between this terminal emulation and a line orientated console device
+more suitable for programs like assemblers and compilers.
+.PP
+True to its aim of allowing the integration of CP/M programs into the
+Unix environment, tnylpo happily does away with certain non-essential,
+rarely used, or extremely un-Unixy features of CP/M-80 (some of which
+\(emto be frank\(em would be disproportionately hard to implement or
+integrate under Unix), among them user areas, the
+rudimentary character device redirection implemented by the I/O byte,
+file attributes, and the printer echo. Whereever some functionality has
+been left out, care has been taken not to offend CP/M programs unduly
+(programs may e. g. set the user area, and on query tnylpo will report
+the current value back to them, but will ignore it otherwise). As a rule,
+tnylpo or Unix offer better solutions to replace the omitted CP/M
+features, e. g. different tnylpo configurations (and drives/directories)
+for different applications
+or users (user areas), shell output redirection (I/O byte),
+.BR chmod (1)
+(file attributes), or 
+.BR script (1)
+(console protocol).
+.SS CPU emulation
+tnylpo strives to provide a full implementation of both documented and
+undocumented features of the Z80 CPU; undocumented instructions
+and side effects are supported to the best of the author's knowledge.
+.PP
+I/O instructions are available, but are dummies; writing to I/O
+ports has no direct effect, and reading them always returns a null byte.
+Same is true for all interrupt related instructions (while
+the I register may be set and read and the EI and DI instructions
+have the expected side effects, no interrupt will ever occur).
+The HALT instruction does not halt the processor (since there are no
+interrupts, this would stall the emulation), but acts if a NMI had
+been received immediately after entering the halt state.
+(Well-behaved CP/M applications will not use any of these instructions
+anyway.)
+.PP
+The R register will be increased as expected; since
+application programs may use the current value of the R register for
+the generation of random numbers (the
+.B Randomize
+procedure of Turbo Pascal seems to do this), the R register is initialized
+with a random value (otherwise, repeated runs of the same program would always
+generate the same sequence of random numbers).
+.PP
+All unused memory and all other registers (apart from PC and SP) are
+set to zero at the start of the emulation, and PC, SP, and the rest of
+the main memory (apart from the areas affected by 
+command line arguments, configuration options, and by loading the executable)
+are always initialized in the same way.
+.SS File name translation
+In translating CP/M disk operations to Unix disk operations, tnylpo
+has to translate CP/M file names to Unix file names and
+.IR "vice versa" ;
+since CP/M
+.I de facto 
+allows almost arbitrary seven-bit characters in its file names
+(including null bytes and slashes), and Unix file names are not bound
+to CP/Ms 8+3 character restriction, tnylpo enforces a common subset:
+only decimal digits, the 26 letters of the alphabet, the minus
+.RB ( - ),
+at
+.RB ( @ ),
+dollar
+.RB ( $ ),
+and hash 
+.RB ( # )
+signs are allowed in file names, which are restricted
+to one to eight characters in length. The name may have an extension
+of up to three characters from the same set; the dot between
+name and extension may only be present if there is at least one
+extension character.
+On the Unix side, all letters appear in lower case, while
+tnylpo accepts (and returns) only upper case letters in
+CP/M FCBs. Unix files with names containing upper case letters or
+otherwise not conforming to tnylpo's restrictions are not accessible to
+CP/M programs. (Dollar signs in Unix file names are a nuisance
+in shell scripts, but since they are habitually used in CP/M
+temporary file names, tnylpo could not forbid them; fortunately,
+CP/M programs creating files with file names containing dollar signs
+usually remove them before exiting.)
+.SH OPTIONS
+Many of tnylpo's command line options have corresponding entries in the
+configuration file, so they will be discussed in this context below (see
+.BR "Configuration options" ).
+Three options have no counterpart:
+.TP
+.B -a
+select the alternate character set from the configuration file
+before starting execution (see 
+.BR "Character sets" )
+.TP
+.BI -f " <config-file>"
+tell tnylpo to read its configuration from the named file
+.TP
+.B -h
+asks tnylpo to show a short command line synopsis and exit
+.RB ( -h
+cannot be used in combination with any other command line option)
+.SS Command line arguments
+tnylpo interprets its first positional command line argument as the name
+of the CP/M program
+.RB ( .com
+file) it is supposed to execute.
+If this argument contains
+a slash
+.RB ( / ),
+it is interpreted as a Unix path name, otherwise it is
+treated as a CP/M file name, i. e. it may be prefixed by a drive specification
+and is interpreted as relative to the path corresponding to this drive or
+the default drive according to tnylpo's configuration (see below). In both
+cases, the suffix
+.B .com 
+is appended if the file name does not already end in
+.BR .com .
+.PP
+All further positional arguments are passed as command line arguments to
+the CP/M program (i. e., they are converted to upper case and copied to
+the default DMA area at 0x0080; additionally, the default
+FCB at 0x005c is initialized according to the second
+and third positional arguments).
+.SS Configuration files
+While some features of tnylpo can be controlled by command line options,
+the most convenient way to configure it is by using a configuration file; if
+a configuration file is explicitly specified on the command line
+(option
+.BR -f ),
+it will be used; otherwise, tnylpo looks for a file named
+.B .tnylpo.conf
+in the current working directory. If none is found, tnylpo looks for
+.B .tnylpo.conf
+in the user's home directory. As a last resort, tnylpo uses its built-in
+defaults. If conflicting options are specified in the configuration file and
+on the command line, the command line takes precedence.
+.PP
+A tnylpo configuration file is a regular text file; empty lines and lines
+starting with a hash sign
+.RB ( # )
+or a semicolon
+.RB ( ; )
+are ignored. All other
+lines have the form
+.RS
+.PP
+.I <keyword>
+.RI [ <token>
+.RI ...]
+.B =
+.I <token>
+.RI [ <token>
+.RI ...]
+.RE
+.PP
+.I <token>
+is either a keyword (a sequence of alphanumeric characters starting
+with a letter), a number (hexadecimal, octal or decimal using the usual
+Unix convention of being prefixed by
+.BR 0x ,
+.BR 0 ,
+resp. some other digit),
+a string in double quotes, or a comma.
+.SS Configuration options
+.HP
+.B drive
+.I <drive letter>
+.B  =
+.RB [ "readonly ," ]
+.I <path>
+.RS
+.PP
+Up to 16 drives can be defined by repeated use of this configuration option;
+.I <drive letter>
+is a single lower case letter in the range a\(enp, and
+.I <path>
+is a string containing the name of a directory on the host
+computer system. CP/M programs trying to create or access a file on the
+corresponding disk drive will create or access a file in this directory.
+Only regular files up to 8MB in size with names corresponding to tnylpo's
+idea of well-behaved file names suitable for both CP/M and Unix (see above)
+are visible to CP/M programs. If
+.I <path>
+is preceeded by the optional keyword
+.BR readonly ,
+programs running in tnylpo will not be able to create new files on this
+drive or rename, delete, or modify existing files (any attempt to
+modify a read-only drive will terminate the offending CP/M program).
+.PP
+There is no corresponding command line option. If no drive has been defined
+in the configuration file (or if there is no configuration file), tnylpo
+will use
+.RS
+.PP
+.B drive a = "."
+.RE
+.PP
+as default, i. e. the current working directory will be made available as
+CP/M drive A.
+.RE
+.HP
+.B default drive =
+.I <drive letter>
+.HP
+command line option
+.B -d
+.I <drive letter>
+.RS
+.PP
+defines the drive identified by
+.I <drive letter>
+(a single lower case letter in the range a\(enp) as default drive, i. e.
+the drive all file specifications not including an explicit drive name
+refer to. This drive must be assigned to a host system directory, either
+implicitly or by the
+.B drive
+configuration option. If
+.B default drive
+is not specified, tnylpo assumes drive A as default drive.
+.RE
+.HP
+.B close files =
+.RB ( true
+|
+.BR false )
+.HP
+command line option
+.B -n
+.RS
+.PP
+If
+.B close files
+is set to
+.B false
+(or if the
+.B -n
+command line option is present), files closed by the CP/M program
+are kept open by tnylpo, i. e. the corresponding FCBs are not
+invalidated. This is required by some CP/M programs (see
+.BR "File closing" ),
+but should be avoided if possible, since otherwise tnylpo might run
+out of file descriptors. By default, tnylpo actually closes files
+closed by the CP/M program.
+.RE
+.HP
+.B logfile =
+.I  <path>
+.RS
+.PP
+.I <path>
+is a quoted string containing the path of a file to which tnylpo appends
+error messages and other logging information (fatal error messages
+are also written to
+.BR stderr ).
+If the
+.B logfile
+configuration option is not used, no logging information will be written.
+There is no corresponding command line option.
+.RE
+.HP
+.B loglevel =
+.I <level>
+.HP
+command line option
+.B -v
+.I <level>
+.RS
+.PP
+The amount of data written to the logfile is controlled by the
+.B loglevel
+configuration option resp. its command line equivalent
+.BR -v .
+Both take a numeric argument; the higher the number, the more information
+is written (causing the emulation to run progressively slower).
+Valid log levels are:
+.IP 0
+write error messages only. 
+.IP 1
+additionally, count the machine instructions executed by the emulator; at
+program termination, tnylpo will output tables showing which instructions
+have been executed how often.
+.IP 2
+additionally, trace FDOS functions (i. e. BDOS functions related to file I/O).
+.IP 3
+additionally, dump FCBs for FDOS functions using a FCB.
+.IP 4
+additionally, dump file records read and written by the FDOS functions.
+.IP 5
+additionally, trace all other system calls (BDOS and BIOS functions); since
+all character I/O functions are traced, this will produce a lot of output.
+.PP
+The logging facility is a leftover from the development and testing of
+tnylpo itself; since it may provide important clues if applications do
+not work as expected, it has been retained.
+.RE
+.HP
+.B console =
+.RB ( full
+|
+.BR line )
+.HP
+command line options
+.B -s
+or
+.B -b
+.RS
+.PP
+tells tnylpo to use the full screen VT52 emulation
+.RB ( full ,
+.BR -s )
+or the line orientated
+.RB ( line ,
+.BR -b )
+console interface. Some other configuration options, e. g.
+.BR lines ", " columns ", " "application cursor" ", and " "screen delay"
+are only effective in the full screen mode. By default, tnylpo uses
+the line orientated console interface.
+.RE
+.HP
+.B screen delay =
+.RI ( <number>
+|
+.BR key )
+.HP
+command line option
+.B -t
+.RI ( <number>
+|
+.BR @ )
+.RS
+.PP
+defines the number of seconds tnylpo should wait between program
+termination and resetting the display. If
+.B key
+(resp.
+.BR @ )
+is specified, tnylpo waits for a key being pressed before exiting
+the VT52 emulation. This option allows the user to see the final display
+of the CP/M application even if resetting the display restores the
+original screen contents or clears the screen. Default value is 0
+(don't wait).
+.RE
+.HP
+.B lines =
+.RI ( <number>
+|
+.BR current )
+.HP
+.B columns =
+.RI ( <number>
+|
+.BR current )
+.HP
+command line options
+.B -l
+.RI ( <number>
+|
+.BR  @ )
+and
+.B -c
+.RI ( <number>
+.B |
+.BR @ )
+.RS
+.PP
+define the display size used by the terminal emulation; the number of lines
+must be between 5 and 95, the number of columns between 20 and 95.
+Using the keyword
+.B current
+(resp.
+.B @
+in case of the command line options) tells tnylpo to use the current size
+of the display device. If no display size is specified in the configuration
+file or on the command line, tnylpo defaults to 24 lines of 80 columns.
+.RE
+.HP
+.B application cursor =
+.RB ( true
+|
+.BR false )
+.HP
+command line option
+.B -w
+.RS
+.PP
+If
+.B application cursor
+is set to
+.B true
+(or the command line option
+.B -w
+is present), pressing the cursor keys up, left, right, or down will send
+the control characters
+.B ^E
+($05),
+.B ^S
+($13),
+.B ^D
+($04), or
+.B ^X
+($18) to the running CP/M program (i. e. the appropriate cursor motion
+commands for programs like WordStar or Turbo Pascal). Otherwise, the
+cursor keys will generate the default VT52 escape sequences,
+.BR "<esc> A" ,
+.BR "<esc> D" ,
+.BR "<esc> C" ,
+and
+.BR "<esc> B" .
+.RE
+.RE
+.HP
+.B exchange delete =
+.RB ( true
+|
+.BR false )
+.HP
+command line option
+.B -r
+.RS
+.PP
+If
+.B exchange delete
+is set to
+.B true
+(or the command line option
+.B -r
+is present), the backspace
+.RB ( ^H ,
+$08) key and the delete ($7f) key are reversed in full screen mode.
+.RE
+.HP
+.RB [ alt ]
+.B char 
+.I <number>
+.B =
+.I <string>
+.HP
+.RB [ alt ]
+.B charset =
+.RB ( ascii
+|
+.B vt52
+|
+.B latin1
+|
+.BR tnylpo )
+.HP
+.B unprintable =
+.I <string>
+.RS
+.PP
+serve to define the primary and alternate character sets used by tnylpo;
+they have no corresponding command line options and are explained below
+(see
+.BR "Character sets" ). 
+.RE
+.HP
+.RB ( printer
+|
+.B punch
+|
+.BR reader )
+.B file =
+.I <path>
+.HP
+.RB ( printer
+|
+.B punch
+|
+.BR reader )
+.B mode =
+.RB ( text
+|
+.BR raw )
+.RS
+.PP
+define the path and the format of the data files representing the
+CP/M character I/O devices
+.BR LST: ,
+.BR PUN: ,
+and
+.BR RDR: ;
+there are no corresponding command line options. Details are explained
+below (see
+.BR "Character devices" ).
+.RE
+.SS Terminal emulation
+tnylpo provides a
+.B ncurses
+based emulation of the DEC VT52 terminal, which can be used instead if the
+default line orientated console to accommodate full-screen applications;
+this terminal emulation is selected by the command line option
+.B -s
+resp. by the entry
+.B console = full
+in the configuration file.
+.PP
+This terminal emulation mimicks the VT52 fairly accurately, but offers a
+number of extensions, among them the ability to support screen sizes of
+up to 95 by 95 characters (this limitation is due to the limitations ot the
+VT52 direct cursor positioning command), eight-bit operation, a dynamically
+switchable alternate character set, insert and delete line commands, and
+bold, underlined, inverted, and blinking (i. e. everybody's favourite)
+character rendition. To protect the CP/M application (resp. its user)
+from the effects of screen resizing, the terminal emulation provides a
+fixed size screen area (typically 80 columns by 24 lines, but this may be
+changed by command line or configuration file options) within the actual
+display (a terminal emulator like
+.BR xterm (1)
+or the screen of an actual serial terminal). If the display device/window is
+larger than this area, there will be blank margins to the right and below
+the VT52 display area; if it is smaller, parts of the emulators output
+will be invisible to the user, but will (re-)appear as soon as the window
+is enlarged.
+.PP
+The terminal emulation (like the VT52) does not do an automatic line wrap
+(i. e. the cursor will not move to the first column of the next line if
+a character is displayed in the last column of a line) and supports
+(or at least tolerates) all of the VT52 control sequences:
+.TP
+.B <bel> (0x07)
+gives an accustic (or visual) signal
+.TP
+.B <bs> (0x08)
+moves the cursor left, stops at column 1
+.TP
+.B <tab> (0x09)
+if the cursor is before the last tabulator stop (tabulator stops are
+at columns 9, 17, 25, ...), move it to the next tabulator stop, otherwise
+move the cursor right one column (does nothing if the cursor is in the
+last column)
+.TP
+.B <lf> (0x0a)
+move cursor down one line, scroll up on bottom line
+.TP
+.B <cr> (0x0d)
+move cursor to the first column of the current line
+.TP
+.B <esc> (0x1b)
+marks the start of an escape sequence (see below)
+.PP
+All other characters in the ASCII control character range (0x00\(en0x1f, 0x7f)
+are ignored. The VT52 escape sequences are:
+.TP
+.BR "<esc> ) (0x1b 0x29)" " and " "<esc> = (0x1b 0x3d)"
+switch keypad to application resp. regular (numeric) mode (no effect in tnylpo)
+.TP
+.B <esc> A (0x1b 0x41)
+moves the cursor up one line, stops at the top line
+.TP
+.B <esc> B (0x1b 0x42)
+moves the cursor down one line, stops at the bottom line
+.TP
+.B <esc> C (0x1b 0x43)
+moves the cursor right one column, stops at the last column
+.TP
+.B <esc> D (0x1b 0x44)
+moves the cursor left one column, stops at the first column
+.TP
+.BR "<esc> F (0x1b 0x46)" " and " "<esc> G (0x1b 0x47)"
+displays character codes 0x5e\(en0x7e as graphical resp. as ASCII characters
+(see below)
+.TP
+.B <esc> H (0x1b 0x48)
+move cursor to the left top corner of the display
+.TP
+.B <esc> I (0x1b 0x49)
+move cursor up one line, scroll down at the first line
+.TP
+.B <esc> J (0x1b 0x4a)
+clear display from the current cursor position to the end of the screen
+.TP
+.B <esc> K (0x1b 0x4b)
+clear display from the current cursor position to the end of the line
+.TP
+.BI "<esc> Y" " <line> <column> " "(0x1b 0x59 0xll 0xcc)"
+move cursor to the specified position of the display; line and column
+numbers are given as graphical characters in the range of 0x20 (position 1)
+to 0x7e (position 95). If the column number is larger than the display width,
+the horizontal position is not changed; a line number larger than the
+hight of the display moves to cursor to the last line.
+.TP
+.B <esc> Z (0x1b 0x5a)
+identify terminal type; the terminal emulation responds by sending the
+sequence
+.B <esc> / K
+(0x1b 0x2f 0x4b), i. e. it identfies itself as VT52 without
+hardcopy device
+.TP
+.BR "<esc> [ (0x1b 0x5b)" " and " "<esc> \\ (0x1b 0x5c)"
+enter resp. exit "hold screen" mode (see below).
+.PP
+In addition, the terminal emulation in tnylpo supports the following
+extensions to the VT52 escape sequences:
+.TP
+.B <esc> E (0x1b 0x45)
+clear the display, move cursor to the top left corner of the display
+.TP
+.B <esc> L (0x1b 0x4c)
+insert a blank line at the cursor position, move lines below down one
+line (the last line is lost)
+.TP
+.B <esc> M (0x1b 0x4d)
+delete the line at the cursor position, move lines below up one line (an
+empty line will appear at the bottom of the display)
+.TP
+.B <esc> N (0x1b 0x4e)
+insert a blank character at the cursor position, move characters to the
+right one position to the right (the last character on the line is lost)
+.TP
+.B <esc> O (0x1b 0x4f)
+delete character at the cursor position, move characters to the right one
+position to the left (a blank character appears in the last column of the
+line)
+.TP
+.BR "<esc> a (0x1b 0x61)" " and " "<esc> b (0x1b 0x62)"
+make cursor invisible resp. visible
+.TP
+.BR "<esc> c (0x1b 0x63)" " and " "<esc> d (0x1b 0x64)"
+switch to alternate resp. primary character set (see below)
+.TP
+.BR "<esc> e (0x1b 0x65)" " and " "<esc> f (0x1b 0x66)"
+switch on resp. off bold characters
+.TP
+.BR "<esc> g (0x1b 0x67)" " and " "<esc> h (0x1b 0x68)"
+switch on resp. off underlined characters
+.TP
+.BR "<esc> i (0x1b 0x69)" " and " "<esc> j (0x1b 0x6a)"
+switch on resp. off inverted characters
+.TP
+.BR "<esc> k (0x1b 0x6a)" " and " "<esc> l (0x1b 0x6c)"
+switch on (arrgh!) resp. off (phew!) blinking characters
+.TP
+.B <esc> m (0x1b 0x6d)
+switch off bold, underlined, blinking, and inverted characters as well
+as standout mode (see below)
+.TP
+.BR "<esc> n (0x1b 0x6e)" " and " "<esc> o (0x1b 0x6f)"
+switch cursor keys to application mode resp. back to regular (VT52) mode:
+in regular mode, the cursor keys send the sequences
+.B <esc> A
+(up),
+.B <esc> B
+(down),
+.B <esc> C
+(right), and
+.B <esc> D
+(left); in application mode, they
+send WordStar-compatible commands, namely
+.B ^E
+(0x05, up),
+.B ^X
+(0x18, down),
+.B ^D
+(0x04, right), and
+.B ^S
+(0x13, left)
+.TP
+.BR "<esc> p (0x1b 0x70)" " and " "<esc> q (0x1b 0x71)"
+switch on resp. off standout mode; standout mode is the most visible
+character attribute provided by
+.B ncurses
+(this is usually inverted video, so using
+.B <esc> p
+and
+.B <esc> q
+is usually
+equivalent to using
+.B <esc> i
+and
+.BR "<esc> j" )
+.PP
+"Hold screen" mode is a feature of the VT52 terminal: it is entered and
+exited either by the computer sending the relevant control sequence or by
+the user by pressing the "hold screen" key (in tnylpo, this is the F5
+key). In "hold screen" mode, trying to scroll up the screen (by a <lf> on
+the bottom line of the screen) blocks further output until either "hold
+screen" mode is exited or the user presses the "scroll page" key
+(F6 in tnylpo) or the "scroll line" key (F7 in tnylpo), which allow
+one more screenfull resp. one more line of output.
+.PP
+Displaying graphical characters instead of ASCII characters for the
+byte range 0x5e\(en0x7f is another feature of the VT52 terminal which allows
+access to certain additional shapes like subscripted digits or the
+\(+- sign; in tnylpo, graphical mode allows displaying the shapes defined
+for the character positions 0x00\(en0x1f and 0x7f, which cannot be displayed
+directly.
+.SS Character sets
+Switching between a primary and an alternate character set is an extension
+provided by tnylpo: two full character sets of 256 shapes (each containing
+a separate graphical character set in the positions 0x00\(en0x1f and 0x7f)
+may be defined in the configuration file; programs may switch between these
+two sets by using
+.B <esc> c
+resp.
+.BR "<esc> d" .
+Switching character sets doesn't
+change characters already written to the display. This feature allows
+programs to use a national variant of the ISO 646 seven-bit character
+set in parallel to standard ASCII characters.
+.PP
+Character set definition is done in the configuration file by using
+the option
+.RS
+.PP
+.RB [ alt ]
+.B char
+.I <number>      
+.B =
+.I <string>
+.RE
+.PP
+which defines
+.I <string>
+(a one-character string literal in double quotes) as representation of
+code
+.I <number>
+(a number in the range 0\(en255) in the primary (or alternate, if
+the line is prefixed by
+.BR alt )
+character set. Characters not explicitly defined in this way are taken from
+a default character set, which may be selected by the option
+.RS
+.PP
+.RB [ alt ]
+.B charset
+.B = 
+.RB ( ascii
+|
+.B vt52
+|
+.B latin1
+|
+.BR tnylpo )
+.RE
+.PP
+The possible values correspond to the four built-in character sets
+ASCII, VT52 (ASCII plus an approximation of the VT52 graphical
+characters), the ISO 8859-1 (Latin 1) eight-bit character set, which
+supplements the ASCII code by characters used in Western European
+languages in positions 0xa0\(en0xff, and finally a homespun superset
+of Windows code page 1252 (and thereby a superset of ISO 8859-1
+and ASCII), which supports block graphics and the VT100 box drawing
+characters  as graphical character set.
+.PP
+If no character set is
+specified, tnylpo uses the VT52 character set by default.
+.PP
+By using the command line option
+.BR -a ,
+a program may be started with the alternate character set selected; the
+effect is almost identical to the program issueing
+.B <esc> c
+as its very first action. (There is a difference in full screen
+console mode: During screen initialization, tnylpo passes the
+blank character from the selected character set to the
+.B ncurses
+library for use as background character. Since the program itself
+can select the alternate character set only after this initialization
+has been done,
+.B ncurses
+will receive the blank character from the primary character set;
+with the
+.B -a
+command line option, it will receive the blank character from the
+alternate character set. This difference is mostly academic,
+since it is not recommended to redefine the blank character
+anyway, see
+below.)
+.PP
+Output characters which are undefined in the currently selected character
+set are ignored by the terminal emulation; the configuration option
+.RS
+.PP
+.B unprintable = 
+.I <string>
+.RE
+.PP
+substitutes undefined characters on output by the value of
+.I <string>
+(which must contain a single character).
+.SS Function keys
+Apart from F5, F6, and F7, which are used to implement the "hold screen"
+function of the VT52 (see above),
+tnylpo's terminal emulation defines the function keys F1, F2, and F3 as
+equivalents of the three unlabeled keys of a VT52 terminal; if pressed, they
+return the sequences
+.B <esc> P
+(0x1b 0x50),
+.B <esc> Q
+(0x1b 0x51), and
+.B <esc> R
+(0x1b 0x52). F4 causes the terminal emulation to redraw its display, which
+is useful if some other program or the host operating system messes up
+the user's screen. F10 sends a SIGINT to tnylpo, causing the emulation
+to stop abruptly, but allowing tnylpo itself to exit gracefully (this key
+is ment as a last-resort way of stopping a CP/M program gone haywire).
+.SS Character devices
+Besides the bidirectional console device, CP/M supports three unidirectional
+character devices, the output-only printer and paper tape punch devices
+.B LST:
+and
+.B PUN:
+and the input-only paper tape reader device
+.BR RDR: .
+tnylpo represents these devices by host system files, to which the
+data provided by the CP/M programs is written resp. from which the data
+presented to the CP/M programs is read.
+.PP
+These files are defined by the configuration options
+.RS
+.PP
+.RB ( printer
+|
+.B punch
+|
+.BR reader )
+.B file =
+.I <path>
+.RE
+.PP
+where
+.I <path>
+is a string in double quotes containing the Unix file path; in case of the
+output devices
+.RB ( LST: " and " PUN: ),
+data written by the CP/M program is appended to the contents of
+the named files;
+.B RDR:
+input will start at the beginning of the reader file. If a CP/M
+program reads past the end of the reader file, tnylpo will continue
+to return
+.B ^Z
+($1a) bytes as end-of-file indication.
+.PP
+tnylpo's character devices can operate in two modes, depending on the
+configuration options
+.RS
+.PP
+.RB ( printer
+|
+.B punch
+|
+.BR reader )
+.B mode =
+.RB ( text
+|
+.BR raw )
+.RE
+.PP
+In
+.B raw
+mode, bytes are written to the file exactly as they are generated by
+the CP/M program resp. passed to the CP/M program exactly as they
+are read from the file
+.RB ( ^Z
+bytes are still returned as EOF indication). In
+.B text
+mode, tnylpo will translate the characters read resp. written using
+the translation table used by the console. Character set switching
+by the console (using the escape sequences
+.B <esc> c
+and
+.BR "<esc> d" )
+will affect this translation, but switching to graphical characters
+.RB ( "<esc> F"
+and
+.BR "<esc> G" )
+will not.
+Moreover, tnylpo will convert the line end markers from
+CP/M
+.RB ( ^M^J ,
+$0d $0a) to Unix
+.RB ( ^J ,
+$0a) and
+.I vice versa
+in this mode.
+.PP
+CP/M programs may access the character devices (including the console
+device) not only by calling BDOS functions (1\(en6 and
+9\(en11), but more directly by calling the relevant BIOS entries
+.RB ( CONST ,
+.BR CONIN ,
+.BR CONOUT ,
+.BR LIST ,
+.BR PUNCH ,
+.BR READER ,
+and
+.BR LISTST ),
+which are (contrary to the disk I/O specific BIOS entries) fully
+functional under tnylpo.
+.SH EXIT STATUS
+tnylpo exits with status 0 if it didn't encounter a fatal error and status 1
+otherwise. Fatal errors include command line and configuration errors
+as well as certain errors by the CP/M program deemed unrecoverable by
+tnylpo, e. g. trying to write a read-only file or a file on a
+disk configured as read-only,
+invalid arguments to system calls, or an illegal sequence of operations
+(like trying to read from a disk file which has already been closed).
+.PP
+Since CP/M-80 (at least in the version 2.2) has no concept of a program
+exit status, the CP/M program
+itself has no easy way of communicating an unsuccessful execution to the
+Unix environment.
+.SH FILES
+.SS ./.tnylpo.conf
+The file
+.B .tnylpo.conf
+in the current working directory is used as configuration file, if
+it is present and no
+configuration file has been specified on the command line.
+.SS ~/.tnylpo.conf
+The file
+.B .tnylpo.conf
+in the user's home directory is used as a configuration file, if it is present,
+if no configuration file has been specified on the command line, and if
+there is no file
+.B .tnylpo.conf
+in the current working directory.
+.PP
+Using configuration informations from a file in the current working directory
+.RB ( ./.tnylpo.conf )
+is convenient in many situations, but poses a potential security risk; mainly
+for this reason, tnylpo refuses to run if its effective user ID is 0.
+.SH NOTES
+.SS Differences between tnylpo and CP/M-80
+By design, there are some incompatibilities between CP/M-80 and the
+emulation provided by tnylpo:
+.SS Direct access to the BDOS and BIOS areas
+Since it doesn't contain any actual
+CP/M code, all programs trying to patch the BDOS or otherwise make
+assumptions about the layout of the operating system or its internal
+data structures will fail while running under tnylpo. 
+.PP
+BDOS and BIOS function emulations are activated by the simulated processor
+executing a RET instruction fetched from one of the uppermost 19 addresses
+of the CP/M memory space (0xffed for the BDOS entry, 0xffee to 0xfffe for the
+17 BIOS entries of CP/M-80 2.2 and 0xffff for one tnylpo-specific delay
+routine hiding as 18th BIOS entry); this use of "magic addresses" might
+confuse debuggers trying to trace system calls.
+.PP
+The BIOS area (starting three bytes before the address
+stored at 0x0001) contains only the 17(+1)-element BIOS jump vector,
+the dummy disk structures (see below) and the above mentioned 19 RET
+instructions. The BDOS area (starting at the address stored at 0x0006) is
+even shorter, containing only a jump to 0xffed and the table 
+of target addresses for the four fatal BDOS error conditions
+(non-existing disk, bad sector, read-only disk, and read-only file;
+these addresses may be modified by an application program, but are completely
+ignored by tnylpo). Any program expecting the BDOS or the BIOS areas to have
+the sizes and alignment characteristics of a real CP/M-80 environment will be
+disappointed.
+.PP
+The OS serial number stored in the six bytes immediately before the
+BDOS area is a (hopefully inoffensive) dummy.
+.PP
+.SS Direct access to the disk drives
+All programs trying to access the CP/M disk structure directly
+(e. g. disk editors) will not work, since there is no underlying CP/M disk
+structure (tnylpo translates FDOS calls into operations on Unix files); all
+disk related BIOS calls are implemented as dummy functions (those few which
+can return an error indication 
+.RB \(em SELDSK ,
+.BR READ ,
+and
+.BR WRITE \(em
+will do so).
+The BDOS functions returning disk structure related information (27 and 31)
+will return dummy structures containing meaningless (but consistent) data;
+for example, all disk drives will be reported as having a block size of
+16KB, 2048 directory entries and a capacity of 8MB, of which 8128KB
+(8MB less four directory blocks) are free (to save space, all drives share the
+same dummy allocation vector, which is of course impossible with real
+CP/M-80). All block information returned by the BDOS functions 17 and 18 is
+meaningless; regardless of the contents of the S2 field (FCB offset 14),
+all otherwise matching
+files are returned only once (as opposed to once per physical extent under
+CP/M-80). Likewise, all block information in the FCBs of open files
+(FCB byte offsets 16 to 31) is meaningless (but may not be disturbed since
+tnylpo stores some state information there, see below). The emulation is
+good enough
+for programs searching for file name patterns or just listing the disk
+directory, but will fail for those trying to analyse the block structure of
+the emulated disk from the returned information.
+.SS Console Command Processor
+.PP
+tnylpo doesn't emulate the CCP, so every program using its features
+(by e. g. creating a
+.B $$$.SUB
+file and expecting the CCP to execute its
+contents) will not work correctly. Ending a program by simply returning
+to the CCP is supported; tnylpo initializes a 8 level CCP stack at
+the end of the TPA and pushes the magic address of the warm boot BIOS
+entry, so a program trying to return to the CCP will terminate correctly.
+.SS File attributes
+File attributes (read-only and system attribute resp. the four
+attributes available for user programs) are not supported by tnylpo;
+the corresponding BDOS function 30 is a dummy. File names characters
+will always be returned with the most significant bits reset.
+.SS User areas
+The concept of user areas is not implemented by tnylpo; while the user
+code may be set by BDOS function 32 (and will be returned when queried),
+this has no influence on file operations.
+.SS I/O byte
+Likewise, the I/O byte functionality is not implemented; while the I/O byte
+may be queried and set (by BDOS functions 7 and 8) and is stored in
+address 0x0003, it has no influence on the character devices.
+.SS FCB structures
+FDOS calls are translated into Unix file operations. For this to work, tnylpo
+maintains a separate list of corresponding Unix files; references to the
+entries of this
+list are stored in the FCBs of open CP/M files (a 16 bit reference number
+is stored at offsets 16 and 17 in the FCBs, and the same number XORed by
+0xafcb is stored at offsets 18 and 19). This allows programs to copy
+the FCBs of open files and use the copies to further access the same files
+(e. g. programs written in Turbo Pascal do such things). The drive and file
+name portions of a FCB are only referenced by BDOS functions
+15, 17, 19, 22, 23, 30, and 35, all other functions (especially the
+read and write functions) use the file reference number to identify the
+relevant Unix file. The current record number in sequential I/O
+operations is stored in the FCB fields EX, S2, and RC (offsets
+12, 14, and 32).
+.SS Sparse files
+Since CP/M file operations are directly mapped to Unix file operations,
+some characteristics of Unix files are visible to CP/M programs running
+on tnylpo: Trying to read a record within an unwritten block in the middle
+of a sparse file would result in an error indication (reading unwritten
+data) under CP/M-80, but simply returns a record of zero bytes under
+tnylpo, since unallocated areas in the middle of a Unix file read as zero.
+Hopefully, few programs will take offence at this difference.
+.SS File closing
+Normally, closing a file in a CP/M program (BDOS function 16) will cause
+tnylpo to close the
+corresponding Unix file and free its entry in the file list. This causes
+problems with certain CP/M software (e. g. dBase II), which continue to
+use FCBs for file operations after calling BDOS function 16. Since the
+close operation just writes the updated FCB data back to the disk
+directory (but doesn't change the FCB), this is possible in CP/M-80
+(though a little dirty in my opinion). Contrarily, tnylpo (in addition
+to closing the corresponding Unix file) removes its
+file reference from the FCB, thereby marking it as invalid for further
+I/O, causing subsequent operations by the CP/M program to
+fail.
+.PP
+To accomodate such programs, tnylpo provides the
+.B -n
+command line option (and the corresponding
+.B close files = false
+configuration option), which prevent closing the Unix file and removing
+the file reference from the FCB (effectively making BDOS function 16
+a dummy operation). If many files are opened (sequentially or concurrently)
+by a CP/M program, this may
+cause tnylpo to run out of files, since the closing of all Unix files is
+deferred until program termination.
+.SS Text file format
+Disk file I/O is always done untranslated, i. e. the contents
+of disk files written by programs running in tnylpo are always in the
+character set used internally by the CP/M emulation. Likewise, the line end
+convention in text files is that of CP/M
+.RB ( ^M^J ,
+0x0d 0x0a) and text files not ending exactly at
+the end of a 128 byte CP/M file record will contain a
+.B ^Z
+(0x1a) byte as
+logical EOF marker (ideally, they should be padded with
+.B ^Z
+bytes to
+the next record border, but in reality they usually end in a single ^Z
+followed by arbitrary rubbish). This must be taken into account when
+using Unix utilities to process files generated by tnylpo.
+.PP
+On the other hand, text files generated under Unix should be converted to
+the CP/M line end convention before processing them with programs
+running under tnylpo (the command 
+.B set ff=dos
+might come handy for
+people using Vim!). The CP/M convention for marking the logical end of
+text files
+is honoured automatically, since tnylpo's BDOS emulation pads Unix files
+to the CP/M record size of 128 bytes with
+.B ^Z
+bytes.
+.SS Performance
+tnylpo has been optimized for portability, not for performance; some
+parts of the processor emulation (e. g. the addition and subtraction
+operations) may be ridiculously inefficient compared to a hand-optimized
+assembler version (or even a C version making moderate use of platform
+specific things like byte order or number representation). On the plus
+side, tnylpo should compile and run on every platform supporting ISO C99
+(for wide and multibyte character support) and the
+.BR ncurses 
+library (o.k.,
+.B int
+variables must have more than 16 bits). That said, I found tnylpo
+blindingly fast compared to the real thing even on the outdated hardware
+I used for its development.
+.SS The delay routine
+Since CP/M-80 version 2.2 offers no functions for time keeping or
+delays, programs are forced to use the cycle time of certain instructions
+in combination with the CPU clock frequency if they need to delay program
+execution; this approach is doomed under an emulator, especially if it
+is running on a
+multiprogramming system.
+.PP
+To allow CP/M programs to delay execution for a defined (wall clock)
+time period, tnylpo supplies a delay routine masquerading
+as 18th BIOS entry: it expects a single parameter, an unsigned 16-bit number
+in register BC and waits this many milliseconds before returning to
+the caller.
+.PP
+The benefit of this routine is limited to nonexisting; since it is an
+extension, no existing CP/M application (for which tnylpo has been created
+in the first place)
+uses it, and even in case somebody would develop new CP/M software,
+employing tnylpo's delay function would break compatibility with all other
+CP/M machines or emulators.
+.SS The name of the program
+"tnylpo" is a fantasy word. Neither is it an acronym nor does it
+have any meaning I know of (which is the main reason I chose it).
+"tnylpo" is pronounced like a native speaker of German (e. g. I)
+would naively pronounce
+"tn\(:ulpo" (or like a speaker of Finnish would pronounce "tnylpo",
+provided she survives the initial consonant cluster). In
+its formation, "tnylpo" with its two syllables and ending in "-po"
+aligns nicely with other nonsense words I invented earlier (like "ilpo" or
+"sampo") \(emuntil I moved to Finland and discovered that most of
+these supposed nonsense words have currency here...
+.SH BUGS
+See the remarks under NOTES. Most of them may be interpreted as bugs in
+the implementation, including the program name.
+.PP
+.SS Character set switching
+A program running in full screen mode (VT52
+emulation) may change its display character set from the primary
+character set to the alternate set and back by issuing an appropriate
+escape sequence. This switching also affects the
+character set translation of the other character devices
+.RB ( LST: ,
+.BR PUN: ,
+and
+.BR RDR: ),
+unless they are operating in raw mode.
+.SS Character redefinition
+It is not recommended to redefine any of the characters which may
+appear in CP/M file names, their Unix equivalents or in the file name/file
+extension fields of an FCB; these include the decimal digits (0x30\(en0x39),
+the upper- and lower case characters (0x41\(en0x5a and 0x61\(en7a),
+space (0x20), dollar sign (0x24), asterisk (0x2a), minus (0x2d),
+dot (0x2e), colon (0x3a), and the question mark (0x3f). 
+.SS Host system locales
+tnylpo has been implemented with the intention to work with all possible
+Unix
+.B CTYPE
+locale settings (other aspects of the current locale are ignored);
+unfortunately, only ASCII based systems and locales
+are supported, since there is no character set independent way to represent
+some of the control characters relevant for CP/M (e. g.
+.B ^C
+and
+.BR ^Z ).
+Currently, tnylpo always assumes that the character codes 0x00\(en0x1f
+and 0x7f of the host operating system single- or multibyte character set
+correspond to the ASCII control characters. Frankly, tnylpo has
+only been extensively tested to work with UTF-8 based locales.
+.SS File namespace clashes
+tnylpo tries to hide unsuitable files in host directories used as CP/M
+drives from CP/M programs; file searches and open requests will ignore
+everything but regular files up to 8MB in size which have acceptable
+names. Unfortunately, this attempt at hiding other objects
+is far from perfect: a CP/M program trying e. g. to create a file whose name
+matches the name of a (hidden) directory will mysteriously fail (a rename
+operation may meet similar problems). It is therefore recommended to reserve
+directories used as CP/M drives to conforming regular files or to give all
+other objects names not acceptable as CP/M file names (a leading dot
+may work wonders!).
+.SH EXAMPLE
+.B tnylpo -f ws.conf ws hugo.txt
+.PP
+will use the configuration file
+.B ws.conf
+and run the program
+.BR ws.com ,
+passing it the string
+.BR hugo.txt
+as command line parameter.
+.PP
+If the file
+.B ws.conf
+contains the following lines
+.RS
+.PP
+.nf
+# 
+# WordStar configuration
+#
+drive a = "."
+printer file = "./printer.txt"
+printer mode = text
+logfile = "./.tnylpo.log"
+loglevel = 0
+#
+# use German character set
+#
+charset = ascii
+char 0x40 = "\(sc"
+char 0x5b = "\(:A"
+char 0x5c = "\(:O"
+char 0x5d = "\(:U"
+char 0x7b = "\(:a"
+char 0x7c = "\(:o"
+char 0x7d = "\(:u"
+char 0x7e = "\(ss"
+unprintable = "\(r?"
+console = full
+lines = 24
+columns = 80
+application cursor = true
+screen delay = 2
+.fi
+.RE
+.PP
+tnylpo will search for
+.B ws.com
+(and other files) in the local directory, which will be used as drive
+A in the emulation; console I/O will be handled in full screen mode
+by the VT52 emulation which uses a screen of 24 lines of 80 columns.
+The cursor keys will be translated to
+.B ^E
+(up),
+.B ^S
+(left),
+.B ^D
+(right), and
+.B ^X
+(down), and the character set will correspond to the German 
+ISO/IEC 646 variant (umlaut characters in place of the brackets and curly
+braces of ASCII). Characters in the range of 0x80 to 0xff will be
+displayed as inverted question marks. Printer output will be written
+to
+.B printer.txt
+in the current directory, will be in
+the Unix character set and will follow Unix line end conventions.
+A log will be appended to
+.B .tnylpo.log
+in the current directory and will contain error messages only. After program
+termination, tnylpo will wait for two seconds before resetting the
+screen.
+.SH AUTHOR
+tnylpo and its manual page were written by Georg Brein
+.RB ( gbrein@gmx.at ),
+a programmer, IT systems administrator and guerilla egyptologist.
+.SH SEE ALSO
+The implementation of the Z80 processor emulation, especially of the
+features not covered by the official documentation, is heavily
+influenced by Sean Young's
+.I The Undocumented Z80 Documented
+(Version 0.91, 18th September 2005).
+.PP
+The CP/M-80 2.2 system interface emulation is based on the
+.I CP/M Operating System Manual
+by Digital Research International (Third Edition: September 1983).
