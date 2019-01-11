@@ -173,10 +173,14 @@ sys_exit(const char *name, int regs) {
 }
 
 
-#define FDOS_ENTRY(name, regs) if (log_level >= LL_FDOS) sys_entry(name, regs)
-#define FDOS_EXIT(name, regs) if (log_level >= LL_FDOS) sys_exit(name, regs)
-#define SYS_ENTRY(name, regs) if (log_level >= LL_SYSCALL) sys_entry(name, regs)
-#define SYS_EXIT(name, regs) if (log_level >= LL_SYSCALL) sys_exit(name, regs)
+#define FDOS_ENTRY(name, regs) \
+	if (log_level >= LL_FDOS) sys_entry(name, regs)
+#define FDOS_EXIT(name, regs) \
+	if (log_level >= LL_FDOS) sys_exit(name, regs)
+#define SYS_ENTRY(name, regs) \
+	if (log_level >= LL_SYSCALL) sys_entry(name, regs)
+#define SYS_EXIT(name, regs) \
+	if (log_level >= LL_SYSCALL) sys_exit(name, regs)
 
 
 /*
