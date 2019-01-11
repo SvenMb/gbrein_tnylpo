@@ -9,7 +9,7 @@ reasonable recent system.
 Read the included man page, `tnylpo.1`; you can format and read
 it with the command
 ```
-nroff -man tnylpo.1 | less`
+nroff -man tnylpo.1 | less
 ```
 ## What is a man page? And what is CP/M-80?
 Move on, there is nothing to see for you. Go play with your
