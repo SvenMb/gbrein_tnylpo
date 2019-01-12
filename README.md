@@ -33,7 +33,7 @@ make
 Copy the resulting binary `tnylpo` to a directory in your `PATH`
 (e. g. `/usr/local/bin`) and the man page `tnylpo.1` to
 an appropriate directory in your `man` hierarchy (e. g.
-`/usr/local/share/man/man.1`).
+`/usr/local/share/man/man1`).
 ```
 man tnylpo
 ```
