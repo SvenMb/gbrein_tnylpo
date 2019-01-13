@@ -54,4 +54,4 @@ clean:
 	rm -f $(OBJS) $(CONVERT_OBJS)
 
 veryclean: clean
-	rm -f tnylpo tnylpo_convert
+	rm -f tnylpo tnylpo-convert
