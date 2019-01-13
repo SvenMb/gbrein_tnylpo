@@ -36,15 +36,22 @@ LIBS=-lncursesw
 else
 LIBS=-lcurses
 endif
-OBJS=main.o readconf.o util.o screen.o cpu.o os.o
+OBJS=main.o readconf.o util.o screen.o cpu.o os.o chario.o
+CONVERT_OBJS=tnylpo-convert.o readconf.o util.o
+
+all: tnylpo tnylpo-convert
 
 tnylpo: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
+tnylpo-convert: $(CONVERT_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CONVERT_OBJS) $(LIBS) -o $@
+
 $(OBJS): tnylpo.h
+$(CONVERT_OBJS): tnylpo.h
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(CONVERT_OBJS)
 
 veryclean: clean
-	rm -f tnylpo
+	rm -f tnylpo tnylpo_convert

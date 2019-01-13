@@ -1,0 +1,198 @@
+.\"
+.\" Copyright (c) 2019 Georg Brein. All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright notice,
+.\"    this list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived from
+.\"    this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+.\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+.\" LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+.\" CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+.\" SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+.\" INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+.\" CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+.\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH tnylpo-convert 1 2019-01-13
+.SH NAME
+tnylpo-convert \- converts text files to and from the CP/M format
+.SH SYNOPSIS
+.HP
+.B tnylpo-convert 
+.RB [ -aeiz ]
+.RB [ -f
+.IR <config-file> ]
+[
+.RB ( -u
+.RI ( <fn>
+|
+.BR - )
+|
+.B -c
+.IR <fn> )
+[
+.RB ( -u
+.RI ( <fn>
+|
+.BR - )
+|
+.B -c
+.IR <fn> )
+] ]
+.HP
+.B tnylpo-convert -h
+.SH DESCRIPTION
+tnylpo-convert is a companion program of
+.BR tnylpo (1)
+and allows the conversion of text files from the format used by the
+host operating system to the format used by CP/M applications running
+under
+.BR tnylpo (1)
+(resp.
+.IR "vice versa" ).
+.PP
+The differences between the Unix text file format and CP/M text files is
+threefold:
+.IP \(em
+Unix uses a single
+.B <lf>
+(0x0a) character as line end marker, while CP/M uses the sequence
+.B <cr> <lf>
+(0x0d 0x0a).
+.IP \(em
+CP/M uses the first
+.B <sub>
+(0x1a) character in the file as end of file marker, except if the logical end
+of the text file coincides with a 128 byte record boundary
+.IP \(em
+CP/M uses 8-bit (or 7-bit) characters, while most recent
+operating systems use wide or multibyte character sets.
+.PP
+tnylpo-convert shares its configuration files with
+.BR tnylpo (1),
+but uses unly the options for the character set definitions
+.RB ([ alt ]
+.BR char ,
+.RB [ alt ]
+.BR charset ,
+and
+.BR unprintable ),
+on which it bases its character translation. Both the configuration file
+syntax and the way tnylpo-convert finds its configuration are described
+in the man page of
+.BR tnylpo (1).
+.SH OPTIONS
+.TP
+.B -a
+use the alternate character set from the configuration file
+for character translation
+.TP
+.BI -c " <cpm-textfile>"
+use the text file
+.I <cpm-textfile>
+in CP/M format as source or target of the conversion
+.TP
+.B -e
+treat unconvertible characters in the source file as an error
+.TP
+.BI -f " <config-file>"
+tell tnylpo-convert explicitly which configuration file to use
+.TP
+.B -h
+asks tnylpo-convert to show a short command line synopsis and exit
+.RB ( -h
+cannot be used in combination with any other command line option)
+.TP
+.B -i
+ignore all unconvertible characters by silently dropping them
+.TP
+.BI -u " <textfile>"
+use the text file
+.I <textfile>
+in host system format as source or target of the conversion; if
+.B -
+is given instead of
+.IR <textfile> ,
+.B stdin
+is read resp.
+.B stdout
+is written instead
+.TP
+.B -z
+always append a
+.B <sub>
+(0x1a) character as an end of file marker to CP/M text files, even if
+they end on a record boundary
+.PP
+The options
+.B -e
+and
+.B -i
+are mutually exclusive; if neither is given, tnylpo-convert will drop
+unconvertible characters, but issue a warning.
+.SS Command line arguments
+tnylpo-convert takes no positional arguments; the
+.B -c
+and 
+.B -u
+options may be given at most twice; the first occurrence defines the
+source file, the second occurrence the target file of the conversion;
+if the target file or both source and target file are missing,
+.B -u -
+is assumed for both. The same file name may be given both as source and
+as target, since tnylpo-convert uses a temporary file for output, which
+is renamed to the target file name on successful completion (this is not
+done if
+.B stdout
+is used for output).
+.SH EXIT STATUS
+tnylpo-convert exits with status 0 if it didn't encounter
+command line, configuration, or I/O errors; otherwise (or if
+unconvertible characters are encountered and the
+.B -e
+option is specified on the command line), status 1 is returned.
+.SH FILES
+.SS ./.tnylpo.conf
+.SS ~/.tnylpo.conf
+default configuration files, see
+.BR tnylpo (1)
+.SH EXAMPLES
+.B tnylpo-convert -f myconf.conf -e -c hugo.txt -u henry.txt
+.PP
+converts the CP/M text file
+.B hugo.txt
+to the format and character set of the host operating system.
+Character set information is taken from the configuration file
+.BR myconf.conf ,
+and any unconvertible characters in
+.B hugo.txt
+will cause the conversion to fail.
+.PP
+.B tnylpo-convert -u test.pas -c test.pas -z
+.PP
+converts the Unix text file
+.B test.pas
+to CP/M format; the default configuration file (if found) is
+used for character set information. The resulting file is always
+terminated with at least one
+.B <sub>
+(0x1a) character.
+.SH AUTHOR
+Georg Brein
+.RB ( tnylpo@gmx.at )
+.SH SEE ALSO
+.BR tnylpo (1)

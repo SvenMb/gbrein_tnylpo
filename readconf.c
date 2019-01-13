@@ -45,12 +45,6 @@
 
 
 /*
- * maximal length of a line in the configuration file
- */
-#define L_LINE 1024
-
-
-/*
  * global variables containing the configuration information
  * from the command line resp. from the configuration file
  */
@@ -117,6 +111,10 @@ int conf_reader_raw = (-1);
  */
 char *conf_log = NULL;
 /*
+ * log level
+ */
+enum log_level log_level = LL_UNSET; 
+/*
  * CP/M default drive (0...15 corresponding to A...P)
  */
 int default_drive = (-1);
@@ -126,6 +124,12 @@ int default_drive = (-1);
  * to use FCBs for file I/O after closing them)
  */
 int dont_close = (-1);
+
+
+/*
+ * maximal length of a line in the configuration file
+ */
+#define L_LINE 1024
 
 
 /*
@@ -590,6 +594,20 @@ get_token(void) {
 
 
 /*
+ * translate drive letters 'a' ... 'p' to drive numbers 0 ... 15
+ */
+static int
+cpm_drive(wchar_t c) {
+	int rc = (-1);
+	wchar_t *cp;
+	static const wchar_t drives[16] = L"abcdefghijklmnop";
+	cp = wcschr(drives, towlower(c));
+	if (cp) rc = cp - drives;
+	return rc;
+}
+
+
+/*
  * common syntax checks: is the next token a equal sign, a string,
  * a keyword, or a number?
  */
@@ -790,7 +808,7 @@ premature_exit:
  * defined on the command line take precedence
  */
 int
-read_config(void) {
+parse_config(void) {
 	int rc = 0, alt, n, drive_no, temp_altkeys = (-1),
 	    temp_dont_close = (-1), temp_interactive = (-1),
 	    temp_screen_delay = (-1), temp_default_drive = (-1),
@@ -1257,234 +1275,22 @@ premature_exit:
 
 
 /*
- * print error message if a command line option has been defined more than once
+ * read the optional configuration file
  */
-static void
-only_once(int c) {
-	perr("option -%c may be specified only once", c);
-}
-
-
-/*
- * parse a screen dimension from the command line (quite similar to
- * parse_dim() above); dimensions have to be decimal numbers in the
- * range min..max or the @ sign for the current screen size
- */
-static int
-parse_size(int c, int min, int max, const char *arg, int *size_p) {
+int read_config(char *fn) {
 	int rc = 0;
-	unsigned long ul;
-	char *cp;
-	if (! strcmp(arg, "@")) {
-		*size_p = (-1);
-	} else {
-		ul = strtoul(arg, &cp, 10);
-		if (*cp || ul < min || ul > max) {
-			perr("option -%c: argument out of range (%d...%d)",
-			    c, min, max);
-			rc = (-1);
-		} else {
-			*size_p = (int) ul;
-		}
-	}
-	return rc;
-}
-
-
-/*
- * get the configuration
- *
- * After parsing the command line, further configuration values are
- * read from a configuration file which is either explicitly named on
- * the command line or in the current directory or in the user's home
- * directory.
- */
-int
-get_config(int argc, char **argv) {
-	int rc = 0, opt, i;
-	char *home = NULL, *cp;
-	static const char valid_drives[] = "abcdefghijklmnop";
-	size_t l;
-	unsigned long ul;
-	opterr = 0;
-	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:")) != EOF) {
-		switch (opt) {
-		case 'a':
-			/*
-			 * use alternate character set
-			 */
-			if (charset) {
-				only_once('a');
-				rc = (-1);
-			} else {
-				charset = 1;
-			}
-			break;
-		case 's':
-		case 'b':
-			/*
-			 * use terminal emulation (-s) or the line
-			 * orientated console interface (-b)
-			 */
-			if (conf_interactive != (-1)) {
-				perr("options -b and -s may be specified "
-				    "only once and are mutually exclusive");
-				rc = (-1);
-			} else {
-				conf_interactive = (optopt == 's');
-			}
-			break;
-		case 'f':
-			/*
-			 * configuration file
-			 */
-			if (cfn) {
-				only_once('f');
-				rc = (-1);
-			}
-			cfn = optarg;
-			break;
-		case 'l':
-			/*
-			 * number of lines of the VT52 emulation
-			 */
-			if (lines) {
-				only_once('l');
-				rc = (-1);
-			}
-			if (parse_size('l', MIN_LINES, MAX_LINES,
-			    optarg, &lines)) {
-				rc = (-1);
-			}
-			break;
-		case 'c':
-			/*
-			 * number of columns of the VT52 emulation
-			 */
-			if (lines) {
-				only_once('c');
-				rc = (-1);
-			}
-			if (parse_size('c', MIN_COLS, MAX_COLS,
-			    optarg, &cols)) {
-				rc = (-1);
-			}
-			break;
-		case 'd':
-			/*
-			 * initial default drive
-			 */
-			if (default_drive != (-1)) {
-				only_once('d');
-				rc = (-1);
-			}
-			l = strlen(optarg);
-			cp = strchr(valid_drives, *optarg);
-			if (l < 1 || l > 2 || (l == 2 && optarg[1] != ':')
-			    || ! cp) {
-				perr("invalid default drive");
-				rc = (-1);
-			} else {
-				default_drive = cp - valid_drives;
-			}
-			break;
-		case 'v':
-			/*
-			 * log level
-			 */
-			if (log_level != LL_UNSET) {
-				only_once('v');
-				rc = (-1);
-			}
-			ul = strtoul(optarg, &cp, 10);
-			if (*cp || ul >= LL_INVALID) {
-				perr("invalid log level");
-				rc = (-1);
-			} else {
-				log_level = (enum log_level) ul;
-			}
-		       	break;
-		case 'w':
-			/*
-			 * use WordStar cursor key sequences
-			 */
-			if (altkeys != (-1)) {
-				only_once('w');
-				rc = (-1);
-			}
-			altkeys = 1;
-			break;
-		case 'r':
-			/*
-			 * reverse backspace and delete keys
-			 */
-			if (reverse_bs_del != (-1)) {
-				only_once('r');
-				rc = (-1);
-			}
-			reverse_bs_del = 1;
-			break;
-		case 'n':
-			/*
-			 * don't actually close files closed
-			 * by BDOS function 19
-			 */
-			if (dont_close != (-1)) {
-				only_once('n');
-				rc = (-1);
-			}
-			dont_close = 1;
-			break;
-		case 't':
-			if (screen_delay != (-1)) {
-				only_once('t');
-				rc = (-1);
-			}
-			if (! strcmp(optarg, "@")) {
-				screen_delay = (-2);
-			} else {
-				ul = strtoul(optarg, &cp, 10);
-				if (*cp || ul > INT_MAX) {
-					perr("invalid delay");
-					rc = (-1);
-				} else {
-					screen_delay = (int) ul;
-				}
-			}
-			break;
-		case '?':
-			perr("invalid option -%c", optopt);
-			rc = (-1);
-			break;
-		}
-	}
-	/*
-	 * there must be a command name on the command line; further
-	 * parameters are passed to the CP/M emulator as CP/M command
-	 * line parameters
-	 */
-	if (argc - optind) {
-		conf_command = argv[optind];
-		conf_argc = argc - optind - 1;
-		conf_argv = argv + optind + 1;
-	} else {
-		perr("command name expected");
-		rc = (-1);
-	}
-	/*
-	 * command line error: print usage information and die
-	 */
-	if (rc) {
-		usage();
-		goto premature_exit;
-	}
+	const char *home;
 	/*
 	 * handle configuration file
 	 */
-	if (cfn) {
+	if (fn) {
 		/*
 		 * configuration file given on the command line
 		 */
+		/*
+		 * make configuration file name available to subprograms
+		 */
+		cfn = fn;
 		cf = fopen(cfn, "r");
 		if (! cf) {
 			perr("cannot open %s: %s", cfn, strerror(errno));
@@ -1521,7 +1327,7 @@ get_config(int argc, char **argv) {
 	 * line, since the console is line orientated by default).
 	 */
 	if (cf) {
-		rc = read_config();
+		rc = parse_config();
 		if (rc) goto premature_exit;
 	} else {
 		/*
@@ -1531,64 +1337,6 @@ get_config(int argc, char **argv) {
 		set_charset(CS_VT52, conf_charset);
 		set_charset(CS_VT52, conf_alt_charset);
 	}
-	/*
-	 * default drive if none specified is A
-	 */
-	if (default_drive == (-1)) default_drive = 0;
-	/*
-	 * default screen size for the VT52 emulation
-	 */
-	if (! lines) lines = 24;
-	if (! cols) cols = 80;
-	/*
-	 * massage screen delay value
-	 */
-	switch (screen_delay) {
-	case (-2): screen_delay = (-1); break;
-	case (-1): screen_delay = 0; break;
-	}
-	/*
-	 * default log level is LL_ERRORS
-	 */
-	if (log_level == LL_UNSET) log_level = LL_ERRORS;
-	/*
-	 * character I/O is by default text
-	 */
-	if (conf_printer_raw == (-1)) conf_printer_raw = 0;
-	if (conf_punch_raw == (-1)) conf_punch_raw = 0;
-	if (conf_reader_raw == (-1)) conf_reader_raw = 0;
-	/*
-	 * if not a single drive is defined, define drive a: as
-	 * the current working directory
-	 */
-	for (i = 0; i < 16 && ! conf_drives[i]; i++);
-	if (i == 16) {
-		conf_drives[0] = alloc(2);
-		strcpy(conf_drives[0], ".");
-	}
-	/*
-	 * default drive must be defined
-	 */
-	if (! conf_drives[default_drive]) {
-		perr("default drive has no definition");
-		rc = (-1);
-	}
-	/*
-	 * close files by default
-	 */
-	if (dont_close == (-1)) dont_close = 0;
-	/*
-	 * use VT52 cursor keys by default
-	 */
-	if (altkeys == (-1)) altkeys = 0;
-	/*
-	 * don't reverse backspace and delete keys by default
-	 */
-	if (reverse_bs_del == (-1)) reverse_bs_del = 0;
-	/*
-	 * default mode is batch
-	 */
-	if (conf_interactive == (-1)) conf_interactive = 0;
 premature_exit:
 	if (cf) {
 		if (fclose(cf)) {

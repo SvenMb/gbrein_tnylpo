@@ -184,6 +184,76 @@ sys_exit(const char *name, int regs) {
 
 
 /*
+ * checks if a base filename is "nice", i. e. acceptable both in CP/M and Unix
+ */
+static int
+is_nice_filename(const char *fn) {
+	const char *cp;
+	size_t l;
+	/*
+	 * valid characters in filename and file name extension
+	 */
+	static const char valid[] = "#$-0123456789@abcdefghijklmnopqrstuvwxyz";
+	/*
+	 * assumption: no, the file name is not nice
+	 */
+	int rc = 0;
+	/*
+	 * is there an extension?
+	 */
+	cp = strchr(fn, '.');
+	if (! cp) {
+		/*
+		 * no extension
+		 */
+		/*
+		 * name must be 1 to 8 characters
+		 */
+		l = strlen(fn);
+		if (l < 1 || l > 8) goto premature_exit;
+		/*
+		 * all characters must be valid
+		 */
+		for (cp = fn; *cp; cp++) {
+			if (! strchr(valid, *cp)) goto premature_exit;
+		}
+	} else {
+		/*
+		 * extension present
+		 */
+		/*
+		 * name must be 1 to 8 characters
+		 */
+		l = cp - fn;
+		if (l < 1 || l > 8) goto premature_exit;
+		/*
+		 * extension must be 1 to 3 characters
+		 */
+		l = strlen(cp + 1);
+		if (l < 1 || l > 3) goto premature_exit;
+		/*
+		 * all name characters must be valid
+		 */
+		for (cp = fn; *cp != '.'; cp++) {
+			if (! strchr(valid, *cp)) goto premature_exit;
+		}
+		/*
+		 * all extension characters must be valid
+		 */
+		for (cp++; *cp; cp++) {
+			if (! strchr(valid, *cp)) goto premature_exit;
+		}
+	}
+	/*
+	 * file name is nice
+	 */
+	rc = 1;
+premature_exit:
+	return rc;
+}
+
+
+/*
  * helper function for os_init(): check file name of command file
  */
 static int

@@ -59,9 +59,6 @@ extern void perr(const char *format, ...);
 extern void plog(const char *format, ...);
 extern void plog_dump(int addr, int length);
 extern void usage(void);
-extern void *alloc(size_t s);
-extern void *resize(void *vp, size_t s);
-extern const char *base_name(const char *path);
 
 
 /*
@@ -164,19 +161,18 @@ extern int reverse_bs_del;
 
 
 /*
- * read configuration from command line and from the configuration file
+ * read the optional configuration file
  */
-extern int get_config(int argc, char **argv);
+extern int read_config(char *cfn);
 
 
 /*
  * utility functions
  */
-extern int is_nice_filename(const char *fn);
-extern int cpm_drive(wchar_t c);
-extern int cpm_filename(const char *fn, int *dp, wchar_t *n, wchar_t *x);
-extern int unix_filename(const unsigned char *fcb, int *drive_p, int *ambig_p,
-    char *fn);
+extern const char *base_name(const char *path);
+extern void *alloc(size_t s);
+extern void *resize(void *vp, size_t s);
+
 
 /*
  * character conversion
