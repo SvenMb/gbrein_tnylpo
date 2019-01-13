@@ -65,7 +65,7 @@ under
 (resp.
 .IR "vice versa" ).
 .PP
-The differences between the Unix text file format and CP/M text files is
+The difference between the Unix text file format and CP/M text files is
 threefold:
 .IP \(em
 Unix uses a single
@@ -130,7 +130,7 @@ is given instead of
 .B stdin
 is read resp.
 .B stdout
-is written instead
+is written
 .TP
 .B -z
 always append a
@@ -144,16 +144,16 @@ and
 .B -i
 are mutually exclusive; if neither is given, tnylpo-convert will drop
 unconvertible characters, but issue a warning.
-.SS Command line arguments
-tnylpo-convert takes no positional arguments; the
+.PP
+tnylpo-convert takes no positional arguments. The
 .B -c
 and 
 .B -u
 options may be given at most twice; the first occurrence defines the
-source file, the second occurrence the target file of the conversion;
-if the target file or both source and target file are missing,
+source file, the second occurrence the target file of the conversion.
+If the target file or both source and target file are missing,
 .B -u -
-is assumed for both. The same file name may be given both as source and
+is used instead. The same file name may be given both as source and
 as target, since tnylpo-convert uses a temporary file for output, which
 is renamed to the target file name on successful completion (this is not
 done if
