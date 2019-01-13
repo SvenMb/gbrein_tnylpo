@@ -4,7 +4,8 @@
 version 2.2 under Unixy operating systems. It has been tested
 under Linux (i386 and amd64 Debian 8 & 9) and Mac OS X (10.13),
 but should need little to no modifications to run under any other
-reasonable recent system.
+reasonable recent system. The companion program `tnylpo-convert`
+converts text files to and from the CP/M format.
 ## More details, please!
 Read the included man page, `tnylpo.1`; you can format and read
 it with the command
@@ -30,8 +31,10 @@ Building itself is as easy as entering
 make
 ```
 ## How do I install it?
-Copy the resulting binary `tnylpo` to a directory in your `PATH`
-(e. g. `/usr/local/bin`) and the man page `tnylpo.1` to
+Copy the resulting binaries `tnylpo` and `tnylpo-convert` to a
+directory in your `PATH`
+(e. g. `/usr/local/bin`) and the man pages `tnylpo.1` and
+`tnylpo-convert.1` to
 an appropriate directory in your `man` hierarchy (e. g.
 `/usr/local/share/man/man1`).
 ```
