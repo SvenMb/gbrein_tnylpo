@@ -171,11 +171,13 @@ option is specified on the command line), status 1 is returned.
 default configuration files, see
 .BR tnylpo (1)
 .SH EXAMPLES
-.B tnylpo-convert -f myconf.conf -e -c hugo.txt -u henry.txt
+.B tnylpo-convert -f myconf.conf -e -c hugo.txt -u -
 .PP
-converts the CP/M text file
+converts the contents of the CP/M text file
 .B hugo.txt
-to the format and character set of the host operating system.
+to the format and character set of the host operating system and
+prints them on
+.BR stdout .
 Character set information is taken from the configuration file
 .BR myconf.conf ,
 and any unconvertible characters in
