@@ -2057,35 +2057,26 @@ no_save:
 /*
  * operand/displacement fetch
  */
-static int
+static inline int
 fetch(void) {
 	int byte;
-	byte = memory[reg_pc++];
-	if (reg_pc == MEMORY_SIZE) reg_pc = 0;
+	byte = memory[reg_pc];
+	reg_pc = ((reg_pc + 1) & 0xffff);
 	return byte;
-}
-
-
-/*
- * increase R
- */
-static void
-increase_r(void) {
-	int t = reg_r; 
-	/*
-	 * increase the lower 7 bits of R by 1, leave bit 7 unchanged
-	 */
-	reg_r = (t & 0x80) | ((t + 1) & 0x7f);
 }
 
 
 /*
  * opcode/prefix fetch: increase R
  */
-static int
+static inline int
 fetch_m1(void) {
+	int t = reg_r; 
 	int opcode = fetch();
-	increase_r();
+	/*
+	 * increase the lower 7 bits of R by 1, leave bit 7 unchanged
+	 */
+	reg_r = (t & 0x80) | ((t + 1) & 0x7f);
 	return opcode;
 }
 
