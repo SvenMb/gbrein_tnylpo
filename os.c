@@ -1511,7 +1511,12 @@ get_unix_name(int fcb, char unix_name[L_UNIX_NAME], const char *caller) {
 	 * convert to Unix charset and fold uppercase letters to
 	 * lowercase letters
 	 */
-	wctomb(NULL, 0);
+	/*
+	 * The assignment to i has the purpose of keeping the
+	 * C compiler in Ubuntu from complaining; we are only
+	 * interested in resetting the internal state of wctoms().
+	 */
+	i = wctomb(NULL, 0);
 	for (up = unix_name, cp = cpm_name; *cp; cp++) {
 		wc = from_cpm(*cp);
 		if (wc == (-1)) goto premature_exit;
