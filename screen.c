@@ -394,6 +394,7 @@ try_read(void) {
 int
 crt_init(void) {
 	int rc = 0;
+	wchar_t wcs[2];
 	wint_t wc;
 	/*
 	 * redirections are not allowed
@@ -448,8 +449,9 @@ crt_init(void) {
 	 */
 	wc = from_cpm(0x20 /* SPC */);
 	if (wc != (-1)) {
-		memset(&blank, 0, sizeof blank);
-		blank.chars[0] = wc;
+		wcs[0] = wc;
+		wcs[1] = L'\0';
+		setcchar(&blank, wcs, 0, 0, NULL);
 		wbkgrnd(pad_p, &blank);
 	}
 	/*
@@ -488,6 +490,7 @@ crt_out(unsigned char c) {
 	int t;
 	wint_t wc;
 	cchar_t cc;
+	wchar_t wcs[2];
 	/*
 	 * handle ASCII control characters
 	 */
@@ -588,16 +591,16 @@ crt_out(unsigned char c) {
 		 */
 		if (wc == (-1)) goto do_nothing;
 		/*
-		 * create Curses representation of current character
+		 * create curses representation of current character
 		 * with all currently active attributes...
 		 */
-		memset(&cc, 0, sizeof cc);
-		cc.chars[0] = wc;
-		if (is_standout) cc.attr |= A_STANDOUT;
-		if (is_underline) cc.attr |= A_UNDERLINE;
-		if (is_blink) cc.attr |= A_BLINK;
-		if (is_reverse) cc.attr |= A_REVERSE;
-		if (is_bold) cc.attr |= A_BOLD;
+		wcs[0] = wc;
+		wcs[1] = L'\0';
+		setcchar(&cc, wcs, ((is_standout ? A_STANDOUT : 0) |
+		    (is_underline ? A_UNDERLINE : 0) |
+		    (is_blink ? A_BLINK : 0) |
+		    (is_reverse ? A_REVERSE : 0) |
+		    (is_bold ? A_BOLD : 0)), 0, NULL);
 		/*
 		 * ... and add it to the VT52 screen
 		 */
