@@ -2,8 +2,8 @@
 ## What is this?
 `tnylpo` allows the execution of programs written for CP/M-80
 version 2.2 under Unixy operating systems. It has been tested
-under Linux (Debian 8 i386, Debian 9 amd64, Ubuntu 18.04.1 LTS amd64)
-and Mac OS X (10.13),
+under Linux (Debian 8 i386, Debian 9 amd64, Ubuntu 18.04.1 LTS amd64),
+FreeBSD (12.0 amd64), and Mac OS X (10.13),
 but should need little to no modifications to run under any other
 reasonable recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.

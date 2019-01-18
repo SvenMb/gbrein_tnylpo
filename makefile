@@ -28,13 +28,16 @@
 
 
 SYSTEM=$(shell uname -s)
-CFLAGS=-std=c99 -pedantic -O3 -Wall -D_POSIX_C_SOURCE=200112L
-CFLAGS+=-D_XOPEN_SOURCE_EXTENDED
+CFLAGS=-std=c99 -pedantic -O3 -Wall
 ifeq ($(SYSTEM),Linux)
+CFLAGS+=-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE_EXTENDED
 CFLAGS+=-I /usr/include/ncursesw
 LIBS=-lncursesw
-else
+else ifeq ($(SYSTEM),Darwin)
+CFLAGS+=-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE_EXTENDED
 LIBS=-lcurses
+else ifeq ($(SYSTEM),FreeBSD)
+LIBS=-lncursesw
 endif
 OBJS=main.o readconf.o util.o screen.o cpu.o os.o chario.o
 CONVERT_OBJS=tnylpo-convert.o readconf.o util.o
