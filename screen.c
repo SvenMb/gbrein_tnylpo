@@ -334,7 +334,7 @@ try_read(void) {
 			/*
 			 * F5 switches "hold screen" mode on or off
 			 */
-			hold_screen = ~hold_screen;
+			hold_screen = ! hold_screen;
 			if (hold_screen) hold_allow = 0;
 			break;
 		case KEY_F(6):
@@ -543,7 +543,7 @@ crt_out(unsigned char c) {
 					}
 					try_read();
 				}
-				hold_allow--;
+				if (hold_screen) hold_allow--;
 			}
 			/*
 			 * scroll down one line
@@ -758,7 +758,7 @@ crt_out(unsigned char c) {
 			 * enter "hold screen" mode
 			 */
 			hold_screen = 1;
-			hold_allow = 0;
+			hold_allow = cursor_y;
 			break;
 		case 0x5c /* \ */:
 			/*
