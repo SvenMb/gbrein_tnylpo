@@ -43,7 +43,7 @@
 const char *
 base_name(const char *path) {
 	const char *cp = path + strlen(path);
-	while (*(cp - 1) != '/') cp--;
+	while (cp != path && *(cp - 1) != '/') cp--;
 	return cp;
 }
 
