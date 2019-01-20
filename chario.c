@@ -327,23 +327,16 @@ console_status(void) {
 	int s = 0, t;
 	fd_set in_set;
 	struct timeval tv;
-	/*
-	 * the VT52 emulation is handled separately
-	 */
 	if (conf_interactive) {
-		s = crt_status();
-		goto premature_exit;
-	}
-	if (redirected) {
 		/*
-		 * the next character is always ready
+		 * the VT52 emulation is handled separately
 		 */
-		s = 1;
+		s = crt_status();
 	} else {
 		/*
-		 * input from the terminal (no emulation): check for
-		 * data availability by a nonblocking (zero-timeout)
-		 * select()
+		 * check for data availability by a nonblocking (zero-timeout)
+		 * select() (this always returns true if stdin is redirected
+		 * from a file)
 		 */
 		FD_ZERO(&in_set);
 		FD_SET(fileno(stdin), &in_set);
@@ -352,7 +345,6 @@ console_status(void) {
 		t = select(fileno(stdin) + 1, &in_set, NULL, NULL, &tv);
 		s = (t != 0);
 	}
-premature_exit:
 	return s;
 }
 
