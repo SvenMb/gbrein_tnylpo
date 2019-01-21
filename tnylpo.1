@@ -119,7 +119,7 @@ alleviate this problem (and to provide the capability of running the same
 CP/M application on different terminal emulations or on 
 serial terminals without reconfiguring the CP/M binaries), tnylpo includes
 a
-.B ncurses
+.B curses
 based emulation of the DEC VT52 terminal (with certain extensions in
 functionality) for use as CP/M console device. tnylpo gives the user the
 choice between this terminal emulation and a line orientated console device
@@ -609,7 +609,7 @@ below (see
 .RE
 .SS Terminal emulation
 tnylpo provides a
-.B ncurses
+.B curses
 based emulation of the DEC VT52 terminal, which can be used instead if the
 default line orientated console to accommodate full-screen applications;
 this terminal emulation is selected by the command line option
@@ -782,7 +782,7 @@ send WordStar-compatible commands, namely
 .BR "<esc> p (0x1b 0x70)" " and " "<esc> q (0x1b 0x71)"
 switch on resp. off standout mode; standout mode is the most visible
 character attribute provided by
-.B ncurses
+.B curses
 (this is usually inverted video, so using
 .B <esc> p
 and
@@ -878,11 +878,11 @@ effect is almost identical to the program issueing
 as its very first action. (There is a difference in full screen
 console mode: During screen initialization, tnylpo passes the
 blank character from the selected character set to the
-.B ncurses
+.B curses
 library for use as background character. Since the program itself
 can select the alternate character set only after this initialization
 has been done,
-.B ncurses
+.B curses
 will receive the blank character from the primary character set;
 with the
 .B -a
@@ -1216,12 +1216,15 @@ parts of the processor emulation (e. g. the addition and subtraction
 operations) may be ridiculously inefficient compared to a hand-optimized
 assembler version (or even a C version making moderate use of platform
 specific things like byte order or number representation). On the plus
-side, tnylpo should compile and run on every platform supporting ISO C99
-(for wide and multibyte character support) and the
-.BR ncurses 
-library (o.k.,
+side, tnylpo should compile and run on every Unixy platform supporting ISO C99
+(for wide and multibyte character support), a wide character capable
+version of the
+.B curses 
+library (e. g.
+.BR ncurses ),
+and 
 .B int
-variables must have more than 16 bits). That said, I found tnylpo
+variables with more than 16 bits. That said, I found tnylpo
 blindingly fast compared to the real thing even on the outdated hardware
 I used for its development.
 .SS The delay routine

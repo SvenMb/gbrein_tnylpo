@@ -3,7 +3,8 @@
 `tnylpo` allows the execution of programs written for CP/M-80
 version 2.2 under Unixy operating systems. It has been tested
 under Linux (Debian 8 i386, Debian 9 amd64, Ubuntu 18.04.1 LTS amd64),
-FreeBSD (12.0 amd64), and Mac OS X (10.9, 10.13),
+FreeBSD (12.0 amd64), NetBSD (8.0 i386), OpenBSD (6.4 i386),
+and Mac OS X (10.9, 10.13),
 but should need little to no modifications to run under any other
 reasonable recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.
@@ -21,8 +22,10 @@ I don't know, but it was fun to write; I guess there are quite
 a lot of CP/M emulators out there, some of them likely
 more mature and richer in features, but I don't care.
 ## How do I build it?
-Make sure to have the `ncurses` library and its headers installed
-(I used version 5.9). You'll need a C compiler supporting the C99
+Make sure you have a version of the `curses` library supporting
+wide characters and its headers installed
+(e. g. `ncurses`; I used version 5.9). You'll need a C compiler
+supporting the C99
 standard. The `makefile` contains GNU `make` features, so you'll
 need GNU `make` to use it (but then it is trivial and short enough that you
 can easily modify it to suit your favourite `make` utility).
