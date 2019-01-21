@@ -165,6 +165,13 @@ reset_curses(void) {
 		nonl();
 		echo();
 		/*
+		 * position cursor to the start of the last line
+		 * for curses implementations not cleaning/restoring
+		 * the screen on exit (e. g. NetBSD)
+		 */
+		wmove(win_p, screen_lines - 1, 0);
+		wrefresh(win_p);
+		/*
 		 * remove the screen handle
 		 */
 		delwin(win_p);
