@@ -37,7 +37,13 @@ else ifeq ($(SYSTEM),Darwin)
 CFLAGS+=-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE_EXTENDED
 LIBS=-lcurses
 else ifeq ($(SYSTEM),FreeBSD)
+CFLAGS+=-D_XOPEN_SOURCE_EXTENDED
 LIBS=-lncursesw
+else ifeq ($(SYSTEM),NetBSD)
+LIBS=-lcurses
+else ifeq ($(SYSTEM),OpenBSD)
+CFLAGS+=-D_XOPEN_SOURCE_EXTENDED
+LIBS=-lcurses
 endif
 OBJS=main.o readconf.o util.o screen.o cpu.o os.o chario.o
 CONVERT_OBJS=tnylpo-convert.o readconf.o util.o
