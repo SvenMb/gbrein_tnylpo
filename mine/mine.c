@@ -30,13 +30,13 @@
 
 
 /*
- * This is a simple text-based implementation of a Minesweeper-like
+ * This is a simple text-based implementation of a minesweeper-like
  * game as a demonstration of tnylpo; it expects tnylpo's VT52
  * emulation and the tnylpo character set.
  *
- * This program was developed using the Hitech C Compiler for CP/M;
- * Compile it with the command "c -o mine.c", which should produce
- " the executable file "mine.com".
+ * This program was developed using the HI-TECH Z80 CP/M C Compiler V3.09;
+ * Compile it with the command "tnylpo -b c -o mine.c", which should produce
+ * the executable file "mine.com".
  *
  * Execute it with the command "tnylpo -f mine.conf mine".
  */
@@ -72,7 +72,7 @@ extern int bios(int, ...);
 
 
 /*
- * representation of a mine, a flag, and a falsely flagged square in
+ * representation of a mine, a flag, and a falsely flagged square on
  * the screen
  */
 #define MINE '\xa4'
@@ -122,7 +122,7 @@ static char mine_hit;
  */
 static int unchecked;
 /*
- * maximal legal index of board
+ * one past the maximal legal index of board
  */
 static int l_field;
 /*
@@ -143,7 +143,7 @@ static unsigned char field[(Y_SIZE - 4) * (X_SIZE - 2)];
 
 
 /*
- * return a pseudo random number in the range [0..32768]
+ * return a pseudo random number in the range [0..32767]
  */
 static int
 rand(void) {
@@ -178,7 +178,7 @@ pubyte(unsigned char uc) {
 
 
 /*
- * turn on bold reverse video on and off
+ * turn bold reverse video on and off
  */
 
 static void
@@ -321,7 +321,7 @@ touch_field(char x, char y) {
 	if (x < 0 || x > x_size - 1 || y < 0 || y > y_size - 1) return;
 	i = x_size * y + x;
 	/*
-	 * skip opened or flagges square
+	 * skip opened or flagged square
 	 */
 	if (field[i] & (M_OPEN | M_FLAG)) return;
 	/*
@@ -344,7 +344,7 @@ touch_field(char x, char y) {
 static void
 play(void) {
 	/*
-	 * message strings
+	 * message strings for centering
 	 */
 	static char you_win[] = "You win!";
 	static char you_lose[] = "You lose!";
@@ -549,8 +549,8 @@ play(void) {
 				/*
 				 * in case of loss, show all undiscovered
 				 * mines; in case of a win (i. e., if all
-				 * remaining unopened fields contain mines,
-				 " show them as flagged
+				 * remaining unopened fields contain mines),
+				 * show them as flagged
 				 */
 				goto_xy(x + x_offset, y + y_offset);
 				br_on();
@@ -566,7 +566,7 @@ play(void) {
 void
 main(void) {
 	/*
-	 * message string
+	 * message string for centering
 	 */
 	static char again[] = "Play again (y/n): ";
 	char key, level;
@@ -578,7 +578,7 @@ main(void) {
 	pstr("Mine Disposal");
 	b_off();
 	/*
-	 * query level; the time to the first keypress of the user's answer
+	 * query level; the time to the keypress of the user's answer
 	 * is used to initialize the pseudo random number generator
 	 */
 	pstr("\r\n\nEnter level (1-5): ");
