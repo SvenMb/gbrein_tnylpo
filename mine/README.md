@@ -56,7 +56,7 @@ flag by pressing `F3` (or the return key), and open all unflagged neighbouring
 squares of an already opened square by pressing `F2` (or the tabulator key).
 The five levels of the game differ only in the size of the board.
 ## I want to quit this sh...y game!
-Press `F10`, `tnylpo`s "kill-this-sh...y-program" key, or activate the
+Press `F10`, `tnylpo`'s "kill-this-sh...y-program" key, or activate the
 nearest mine.
 ## Who wrote this piece of s...oftware?
 Georg Brein, `tnylpo@gmx.at`
