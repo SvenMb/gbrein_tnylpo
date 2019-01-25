@@ -45,6 +45,9 @@ an appropriate directory in your `man` hierarchy (e. g.
 man tnylpo
 ```
 will then tell you how to get your CP/M-80 programs running.
+
+The subdirectory `mine` contains a simple text-based CP/M game which
+can be used to test/demonstrate `tnylpo`.
 ## What is the legal situation?
 `tnylpo` is Open Source under a BSD-style license (see `LICENSE`);
 apart from that, feel free to use it, modify it, or sell it for big
