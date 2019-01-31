@@ -12,7 +12,7 @@ converts text files to and from the CP/M format.
 ## More details, please!
 Read the included man page, `tnylpo.1`; you can format and read
 it with the command
-```
+```sh
 nroff -man tnylpo.1 | less
 ```
 ## What is a man page? And what is CP/M-80?
@@ -32,7 +32,7 @@ need GNU `make` to use it (but then it is trivial and short enough that you
 can easily modify it to suit your favourite `make` utility).
 
 Building itself is as easy as entering
-```
+```sh
 make
 ```
 ## How do I install it?
@@ -42,7 +42,7 @@ directory in your `PATH`
 `tnylpo-convert.1` to
 an appropriate directory in your `man` hierarchy (e. g.
 `/usr/local/share/man/man1`).
-```
+```sh
 man tnylpo
 ```
 will then tell you how to get your CP/M-80 programs running.

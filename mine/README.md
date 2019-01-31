@@ -21,7 +21,7 @@ and to create `mine.com`.
 After downloading the compiler and its companion programs (and
 after converting all filenames to lower case), you can recreate `mine.com`
 by the command
-```
+```sh
 tnylpo -b c -o mine.c
 ```
 By the way, are you sure you trust this compiler? (kudos to Ken Thompson,
@@ -30,7 +30,7 @@ Aug 1984, 761-763.)
 ## How do I run it?
 Assuming you already compiled and installed `tnylpo`, start `mine` by
 the command
-```
+```sh
 tnylpo -f mine.conf mine
 ```
 `mine.conf` is an included `tnylpo` configuration file selecting the
