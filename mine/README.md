@@ -13,7 +13,7 @@ A worthy standpoint. Go ahead, review the source code and compile it
 yourself!
 
 I used the HI-TECH Z80 CP/M C compiler V3.09 (available e. g.
-from `http://www.retroarchive.org/cpm/cdrom/SIMTEL/HITECH-C/`), which
+from [http://www.retroarchive.org/cpm/cdrom/SIMTEL/HITECH-C/](http://www.retroarchive.org/cpm/cdrom/SIMTEL/HITECH-C/)), which
 "is provided free of charge for any use, private or commercial, strictly
 as-is" (see the accompanying documentation) to develop `mine`
 and to create `mine.com`.
