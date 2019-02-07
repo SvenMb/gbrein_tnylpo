@@ -24,9 +24,9 @@ by the command
 ```sh
 tnylpo -b c -o mine.c
 ```
-By the way, are you sure you trust this compiler? (kudos to Ken Thompson,
+By the way, are you sure you trust this compiler? (kudos to [Ken Thompson,
 Reflections on trusting trust, Communications of the ACM Volume 27 Issue 8,
-Aug 1984, 761-763.)
+Aug 1984, 761-763.](https://dl.acm.org/citation.cfm?id=358210))
 ## How do I run it?
 Assuming you already compiled and installed `tnylpo`, start `mine` by
 the command
