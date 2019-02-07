@@ -1464,49 +1464,36 @@ bdos_select_disk(void) {
  */
 static int
 get_unix_name(int fcb, char unix_name[L_UNIX_NAME], const char *caller) {
-	int rc = (-1), i, e, t;
-	unsigned char cpm_name[12 + 1 ], c, *cp;
+	int rc = (-1), i, t, lfn, lext;
+	unsigned char fn[8], ext[3];
 	wint_t wc;
 	char *up;
-	cp = cpm_name;
 	/*
-	 * calculate length of filename
+	 * copy file name, clearing high bits; calculate length of file name
 	 */
-	i = fcb + 1;
-	for (e = i + 8; e != i && memory[e - 1] == 0x20 /* SPC */; e--);
+	for (i = 0; i < 8; i++) fn[i] = (memory[fcb + 1 + i] & 0x7f);
+	for (lfn = 8; lfn && fn[lfn - 1] == 0x20 /* SPC */; lfn--);
 	/*
-	 * filename must be at least one character long
+	 * file name must contain at least one character
 	 */
-	if (i == e) goto premature_exit;
+	if (! lfn) goto premature_exit;
 	/*
-	 * copy filename and check it for valid characters
+	 * check file name for valid characters
 	 */
-	while (i != e) {
-		c = memory[i++];
-		if (! is_valid_in_cfn(c)) goto premature_exit;
-		*cp++ = c;
+	for (i = 0; i < lfn; i++) {
+		if (! is_valid_in_cfn(fn[i])) goto premature_exit;
+	}	
+	/*
+	 * copy extension, clearing high bits; calculate length of extension
+	 */
+	for (i = 0; i < 3; i++) ext[i] = (memory[fcb + 9 + i] & 0x7f);
+	for (lext = 3; lext && ext[lext - 1] == 0x20 /* SPC */; lext--);
+	/*
+	 * check extension for valid characters
+	 */
+	for (i = 0; i < lext; i++) {
+		if (! is_valid_in_cfn(ext[i])) goto premature_exit;
 	}
-	/*
-	 * calculate length of extension
-	 */
-	i = fcb + 9;
-	for (e = i + 3; e != i && memory[e - 1] == 0x20 /* SPC */; e--);
-	if (i != e) {
-		/*
-		 * if the extension is not empty, appemd a dot and
-		 * the extension to the result
-		 */
-		*cp++ = 0x2e /* . */;
-		while (i != e) {
-			c = memory[i++];
-			if (! is_valid_in_cfn(c)) goto premature_exit;
-			*cp++ = c;
-		}
-	}
-	/*
-	 * terminate result
-	 */
-	*cp = 0x00 /* NUL */;
 	/*
 	 * convert to Unix charset and fold uppercase letters to
 	 * lowercase letters
@@ -1517,14 +1504,46 @@ get_unix_name(int fcb, char unix_name[L_UNIX_NAME], const char *caller) {
 	 * interested in resetting the internal state of wctoms().
 	 */
 	i = wctomb(NULL, 0);
-	for (up = unix_name, cp = cpm_name; *cp; cp++) {
-		wc = from_cpm(*cp);
+	up = unix_name;
+	/*
+	 * convert the file name
+	 */
+	for (i = 0; i < lfn; i++) {
+		wc = from_cpm(fn[i]);
 		if (wc == (-1)) goto premature_exit;
 		wc = towlower(wc);
 		t = wctomb(up, wc);
 		if (t == (-1)) goto premature_exit;
 		up += t;
 	}
+	/*
+	 * the extension may be missing; in that case, no dot is
+	 * appended to the file name
+	 */
+	if (lext) {
+		/*
+		 * append dot
+		 */
+		wc = from_cpm(0x2e /* . */);
+		if (wc == (-1)) goto premature_exit;
+		t = wctomb(up, wc);
+		if (t == (-1)) goto premature_exit;
+		up += t;
+		/*
+		 * convert extension
+		 */
+		for (i = 0; i < lext; i++) {
+			wc = from_cpm(ext[i]);
+			if (wc == (-1)) goto premature_exit;
+			wc = towlower(wc);
+			t = wctomb(up, wc);
+			if (t == (-1)) goto premature_exit;
+			up += t;
+		}
+	}
+	/*
+	 * terminate the result
+	 */
 	*up = '\0';
 	rc = 0;
 premature_exit:
@@ -2603,7 +2622,7 @@ bdos_get_read_only_vector(void) {
  */
 static void
 bdos_set_file_attributes(void) {
-	int fcb, drive, i;
+	int fcb, drive;
 	char unix_name[L_UNIX_NAME], *path = NULL;
 	static const char func[] = "set file attributes";
 	FDOS_ENTRY(func, REGS_DE);
@@ -2630,10 +2649,6 @@ bdos_set_file_attributes(void) {
 		term_reason = ERR_RODISK;
 		goto premature_exit;
 	}
-	/*
-	 * silently remove the high bits from the file name
-	 */
-	for (i = 0; i < 11; i++) memory[fcb + 1 + i] &= 0x7f;
 	if (get_unix_name(fcb, unix_name, func) == (-1)) goto premature_exit;
 	/*
 	 * file name may not be ambigous
