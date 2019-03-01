@@ -1024,20 +1024,17 @@ put_crlf(void) {
 
 
 /*
- * output graphical character to the console; if the output device is the
- * VT52 emulation and the line end is reached, a line wrap is appended
+ * output graphical character to the console
  */
 static void
 put_graph(unsigned char c) {
 	console_out(c);
 	console_col++;
-	if (conf_interactive && console_col == cols) put_crlf();
 }
 
 
 /*
- * output a character to the console, interpret BS, LF, HT, and CR, and
- * suppress all other control characters
+ * output a character to the console, interpret BS, LF, HT, and CR
  */
 static void
 put_char(unsigned char c) {
@@ -1063,10 +1060,6 @@ put_char(unsigned char c) {
 		console_col = 0;
 		return;
 	}
-	/*
-	 * suppress other control characters
-	 */
-	if (c < 0x20 /* SPC */ || c == 0x7f /* DEL */) return;
 	put_graph(c);
 }
 
@@ -1085,13 +1078,21 @@ put_ctrl(unsigned char c) {
 
 
 /*
- * get a byte from the console
+ * get a byte from the console; echo graphical characters and some
+ * control characters
  */
 static unsigned char
 get_char(void) {
 	unsigned char c;
 	c = console_in();
-	put_char(c);
+	if (c < 0x20 /* SPC */ || c == 0x7f /* DEL */) {
+		if (c == 0x08 /* BS */ || c == 0x09 /* TAB */ ||
+		    c == 0x0a /* LF */ || c == 0x0d /* CR */) {
+		    	put_char(c);
+		}
+	} else {
+		put_char(c);
+	}
 	return c;
 }
 
@@ -1300,11 +1301,7 @@ bdos_read_console_buffer(void) {
 		/*
 		 * delete last character by overtyping
 		 */
-#if (0)
-		if (c == 0x08 /* BS */) {
-#else
 		if (c == 0x08 /* BS */ || c == 0x7f /* DEL */) {
-#endif
 			if (free < size) {
 				curr--;
 				free++;
@@ -1353,19 +1350,6 @@ bdos_read_console_buffer(void) {
 			free = size;
 			continue;
 		}
-#if (0)
-		/*
-		 * discard last character, echo deleted character
-		 */
-		if (c == 0x7f /* DEL */) {
-			if (free < size) {
-				curr--;
-				free++;
-				put_ctrl(memory[curr]);
-			}
-			continue;
-		}
-#endif
 		/*
 		 * echo character and store into buffer
 		 */
