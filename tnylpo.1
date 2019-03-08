@@ -154,7 +154,7 @@ Same is true for all interrupt related instructions (while
 the I register may be set and read and the EI and DI instructions
 have the expected side effects, no interrupt will ever occur).
 The HALT instruction does not halt the processor (since there are no
-interrupts, this would stall the emulation), but acts if a NMI had
+interrupts, this would stall the emulation), but acts as if a NMI had
 been received immediately after entering the halt state.
 (Well-behaved CP/M applications will not use any of these instructions
 anyway.)
