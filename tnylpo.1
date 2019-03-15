@@ -514,13 +514,13 @@ is set to
 is present), pressing the cursor keys up, left, right, or down will send
 the control characters
 .B ^E
-($05),
+(0x05),
 .B ^S
-($13),
+(0x13),
 .B ^D
-($04), or
+(0x04), or
 .B ^X
-($18) to the running CP/M program (i. e. the appropriate cursor motion
+(0x18) to the running CP/M program (i. e. the appropriate cursor motion
 commands for programs like WordStar or Turbo Pascal). Otherwise, the
 cursor keys will generate the default VT52 escape sequences, 
 .BR "<esc> A" ,
@@ -549,7 +549,7 @@ is set to
 .B -r
 is present), the backspace
 .RB ( ^H ,
-$08) key and the delete ($7f) key are reversed in full screen mode.
+0x08) key and the delete (0x7f) key are reversed in full screen mode.
 .RE
 .HP
 .RB [ alt ]
@@ -955,7 +955,7 @@ input will start at the beginning of the reader file. If a CP/M
 program reads past the end of the reader file, tnylpo will continue
 to return
 .B ^Z
-($1a) bytes as end-of-file indication.
+(0x1a) bytes as end-of-file indication.
 .PP
 tnylpo's character devices can operate in two modes, depending on the
 configuration options
@@ -994,9 +994,9 @@ will not.
 Moreover, tnylpo will convert the line end markers from
 CP/M
 .RB ( ^M^J ,
-$0d $0a) to Unix
+0x0d 0x0a) to Unix
 .RB ( ^J ,
-$0a) and
+0x0a) and
 .I vice versa
 in this mode.
 .PP
