@@ -2818,7 +2818,7 @@ cpu_exit(void) {
 		perr("attempted write access to read-only disk");
 		break;
 	case ERR_ROFILE:
-		perr("attemted write access to read-only file");
+		perr("attempted write access to read-only file");
 		break;
 	case ERR_HOST:
 		perr("host system call failed");
