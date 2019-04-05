@@ -23,23 +23,23 @@ I don't know, but it was fun to write; I guess there are quite
 a lot of CP/M emulators out there, some of them likely
 more mature and richer in features, but I don't care.
 ## What makes this program special?
-I'm not the right person to tell you, since I didn't do much
+I'm not the right person to tell, since I didn't do much
 research into other CP/M emulators, so I cannot tell you what makes
-`tnylpo` stand out from the crowd (and there is quit a crowd of
+`tnylpo` stand out from the crowd (and there is quite a crowd of
 CP/M emulators, see e. g. the [emulators page on Thomas Scherrer's Z80
 pages](http://www.z80.info/z80emu.htm)).
 
 I wrote `tnylpo` for my own use, and I primarily wanted
 to run CP/M compilers and assemblers on more recent machines. Since this is my
 preferred working environment, I wanted my emulator to integrate CP/M
-software as tightly much as possible into the Unix command line.
+software as tightly as possible into the Unix command line.
 Consequently, if you are in search of the authentic look-and-feel of
 CP/M back in its heyday, `tnylpo` is probably not what you are
 looking for. If on the other hand you want to play with old CP/M source
 code and compilers without having access to a CP/M computer, if you do not
 want to wait for the ages it takes the tired iron to create an executable,
 or if you simply prefer to edit your CP/M sources with your favourite
-Unix editor instead of CP/Ms `ed`,
+Unix editor instead of CP/M's `ed`,
 you might find `tnylpo` useful. Likewise, it may be the right tool if
 you need to access e. g. old dBase II databases or WordStar text files,
 especially if they contain data in some half-forgotten ASCII variant.
@@ -49,17 +49,18 @@ In short, `tnylpo`
 instructions and features)
 * provides a TPA size of 63,5KB
 * maps CP/M file operations to operations on files in the Unix file
-system (up to 16 CP/M drives may be mapped to arbitrary Unix directories)
+system
+* allows you to map up to 16 CP/M drives to arbitrary Unix directories
 * supports read-only drives
 * maps the character set of the Unix locale (usually UTF-8) to
 a user-configurable single byte CP/M character set for console (and
 optionally, for printer, punch, and reader) I/O
 * provides a built-in curses based emulation of the DEC VT52
 terminal for full-screen applications (with extensions such as
-8 bit characters, an alternate character set, insert/delete line,
-character attributes, and VT100 box drawing characters)
+eight bit characters, an alternate character set, insert/delete line
+commands, character attributes, and VT100 box drawing characters)
 * shields CP/M programs from terminal window resizing
-* allows to use CP/M programs with Unix shell redirections and pipelines.
+* allows to combine CP/M programs with Unix shell redirections and pipelines.
 ## How do I build it?
 Make sure you have a version of the `curses` library supporting
 wide characters and its headers installed
