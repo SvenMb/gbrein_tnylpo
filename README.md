@@ -18,10 +18,6 @@ nroff -man tnylpo.1 | less
 ## What is a man page? And what is CP/M-80?
 Move on, there is nothing to see for you. Go play with your
 smartphone, kiddy.
-## No, seriously, who needs this?
-I don't know, but it was fun to write; I guess there are quite
-a lot of CP/M emulators out there, some of them likely
-more mature and richer in features, but I don't care.
 ## What makes this program special?
 I'm not the right person to tell, since I didn't do much
 research into other CP/M emulators, so I cannot tell you what makes
