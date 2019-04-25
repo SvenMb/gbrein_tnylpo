@@ -43,7 +43,7 @@ especially if they contain data in some half-forgotten ASCII variant.
 In short, `tnylpo`
 * supports the full Z80 instruction set (including undocumented
 instructions and features)
-* provides a TPA size of 63,5KB
+* provides a TPA size of 63.5KB
 * maps CP/M file operations to operations on files in the Unix file
 system
 * allows you to map up to 16 CP/M drives to arbitrary Unix directories
