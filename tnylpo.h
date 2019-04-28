@@ -122,7 +122,7 @@ extern int cpu_exit(void);
 
 
 /*
- * OS emulation functions (in fact part, OS emulation is part of the CPU
+ * OS emulation functions (in fact, OS emulation is part of the CPU
  * emulation, but separated to keep the source file size managable)
  */ 
 extern int os_init(void);
