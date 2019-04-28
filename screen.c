@@ -162,7 +162,7 @@ reset_curses(void) {
 		 * restore terminal default parameters, turn on echo
 		 */
 		noraw();
-		nonl();
+		nl();
 		echo();
 		/*
 		 * position cursor to the start of the last line
