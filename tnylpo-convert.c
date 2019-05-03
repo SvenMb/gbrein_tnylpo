@@ -328,7 +328,8 @@ main(int argc, char **argv) {
 		 * build temporary target file name
 		 */
 		temp_name = alloc(strlen(target_name) + 30);
-		sprintf(temp_name, "%s.temp.%d", target_name, getpid());
+		sprintf(temp_name, "%s.temp.%lu", target_name,
+		    (unsigned long) getpid());
 		target_fp = fopen(temp_name, target_unix ? "w" : "wb");
 		if (! target_fp) {
 			perr("couldn\'t open %s: %s", temp_name,
