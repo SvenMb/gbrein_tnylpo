@@ -568,7 +568,7 @@ reader_in(void) {
 			 */
 			if (errno != EAGAIN) {
 				reader_error = errno;
-				break;;
+				break;
 			}
 		}
 	} else {
