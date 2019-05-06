@@ -58,9 +58,9 @@ commands, character attributes, and VT100 box drawing characters)
 * shields CP/M programs from terminal window resizing
 * allows to combine CP/M programs with Unix shell redirections and pipelines.
 ## How do I build it?
-Make sure you have a version of the `curses` library supporting
+Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
-(e. g. `ncurses`; I used version 5.9). You'll need a C compiler
+(I used version 5.9). You'll need a C compiler
 supporting the C99
 standard. The `makefile` contains GNU `make` features, so you'll
 need GNU `make` to use it (but then it is trivial and short enough that you
