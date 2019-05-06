@@ -44,6 +44,18 @@ LIBS=-lcurses
 else ifeq ($(SYSTEM),OpenBSD)
 CFLAGS+=-D_XOPEN_SOURCE_EXTENDED
 LIBS=-lcurses
+else ifeq ($(SYSTEM),SunOS)
+NCURSESROOT=/opt/csw
+CFLAGS+=-D_XOPEN_SOURCE_EXTENDED -D__EXTENSIONS__
+CFLAGS+=-I $(NCURSESROOT)/include/ncursesw -I $(NCURSESROOT)/include 
+LP64ISA=$(shell isalist | tr " " "\n" | egrep '^(v9|amd64)$')
+ifeq ($(LP64ISA),)
+LIBS=-L $(NCURSESROOT)/lib -R $(NCURSESROOT)/lib
+else
+CFLAGS+=-m64
+LIBS=-L $(NCURSESROOT)/lib/64 -R $(NCURSESROOT)/lib/64
+endif
+LIBS+=-lncursesw
 endif
 OBJS=main.o readconf.o util.o screen.o cpu.o os.o chario.o
 CONVERT_OBJS=tnylpo-convert.o readconf.o util.o
