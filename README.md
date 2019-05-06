@@ -5,7 +5,7 @@ version 2.2 under Unixy operating systems. It has been tested
 under Linux (Debian 8 i386, Debian 9 amd64, Ubuntu 18.04.1 LTS amd64,
 CentOS 7),
 FreeBSD (12.0 amd64), NetBSD (8.0 i386, sparc, vax), OpenBSD (6.4 i386),
-and Mac OS X (10.9, 10.13),
+Solaris (10 x86, 32 and 64 bit), and Mac OS X (10.9, 10.13),
 but should need little to no modifications to run under any other
 reasonable recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.
@@ -66,10 +66,11 @@ standard. The `makefile` contains GNU `make` features, so you'll
 need GNU `make` to use it (but then it is trivial and short enough that you
 can easily modify it to suit your favourite `make` utility).
 
-Building itself is as easy as entering
+Building itself (at least on tested platforms) is as easy as entering
 ```sh
 make
 ```
+(resp. `gmake` on platforms with a non-GNU primary `make` utility).
 ## How do I install it?
 Copy the resulting binaries `tnylpo` and `tnylpo-convert` to a
 directory in your `PATH`
