@@ -153,6 +153,12 @@ static int token = (-1);
 static unsigned long token_ul = 0;
 static wchar_t *token_ident = NULL;
 static wchar_t *token_string = NULL;
+/*
+ * character class for blank; Solaris < 10 doesn't support
+ * iswblank(), so we use iswctype() instead; for this, we need the
+ * value of wctype("blank"), which we get once and store in this variable
+ */
+static wctype_t wctype_blank;
 
 
 /*
@@ -482,7 +488,7 @@ get_token(void) {
 	/*
 	 * skip blanks
 	 */
-	while (iswblank(*curr_p)) curr_p++;
+	while (iswctype(*curr_p, wctype_blank)) curr_p++;
 	/*
 	 * test for EOL resp. start of a comment
 	 */
@@ -818,6 +824,13 @@ parse_config(void) {
 	enum charset default_cs[2] = { CS_NONE, CS_NONE };
 	wchar_t **cs;
 	enum log_level temp_log_level = LL_UNSET;
+	/*
+	 * get wctype("blank") once
+	 */
+	wctype_blank = wctype("blank");
+	/*
+	 * parse the file
+	 */
 	for (;;) {
 		/*
 		 * get next line from configuration file and initialize
