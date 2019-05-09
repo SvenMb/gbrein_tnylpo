@@ -66,7 +66,7 @@ tnylpo: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
 tnylpo-convert: $(CONVERT_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(CONVERT_OBJS) $(LIBS) -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CONVERT_OBJS) -o $@
 
 $(OBJS): tnylpo.h
 $(CONVERT_OBJS): tnylpo.h
