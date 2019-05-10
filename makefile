@@ -45,8 +45,9 @@ else ifeq ($(SYSTEM),OpenBSD)
 CFLAGS+=-D_XOPEN_SOURCE_EXTENDED
 LIBS=-lcurses
 else ifeq ($(SYSTEM),SunOS)
+OLDSOLARIS=$(shell uname -r | awk -F. '{if ($$2<10) print "-DOLD_SOLARIS";}')
 NCURSESROOT=/opt/csw
-CFLAGS+=-D_XOPEN_SOURCE_EXTENDED -D__EXTENSIONS__
+CFLAGS+=-D_XOPEN_SOURCE_EXTENDED -D__EXTENSIONS__ $(OLDSOLARIS)
 CFLAGS+=-I $(NCURSESROOT)/include/ncursesw -I $(NCURSESROOT)/include 
 LP64ISA=$(shell isalist | tr " " "\n" | egrep '^(v9|amd64)$')
 ifeq ($(LP64ISA),)
