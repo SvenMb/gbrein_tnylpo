@@ -2,10 +2,11 @@
 ## What is this?
 `tnylpo` allows the execution of programs written for CP/M-80
 version 2.2 under Unixy operating systems. It has been tested
-under Linux (Debian 8 i386, Debian 9 amd64, Ubuntu 18.04.1 LTS amd64,
+under Linux (Debian 8 i386; Debian 9 amd64; Ubuntu 18.04.1 LTS amd64;
 CentOS 7),
 FreeBSD (12.0 amd64), NetBSD (8.0 i386, sparc, vax), OpenBSD (6.4 i386),
-Solaris (10 x86, 32 and 64 bit), and Mac OS X (10.9, 10.13),
+Solaris (10 x86, 32 and 64 bit; 9 sparc, 32 bit; 7 sparc, 32 bit),
+and Mac OS X (10.9, 10.13),
 but should need little to no modifications to run under any other
 reasonable recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.
@@ -71,6 +72,13 @@ Building itself (at least on tested platforms) is as easy as entering
 make
 ```
 (resp. `gmake` on platforms with a non-GNU primary `make` utility).
+
+Note for Solaris users: Since there is no standardized installation directory
+for the `ncurses` library under Solaris, you will have to modify
+`$(NCURSESROOT)` to reflect the place where `ncurses` lives
+on your system; likewise, depending on the compiler you use, you will
+have to adapt `$(CC)` and possibly `$(CFLAGS)`.
+
 ## How do I install it?
 Copy the resulting binaries `tnylpo` and `tnylpo-convert` to a
 directory in your `PATH`
