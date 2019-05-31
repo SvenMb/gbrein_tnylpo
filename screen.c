@@ -501,7 +501,7 @@ crt_out(unsigned char c) {
 	/*
 	 * handle ASCII control characters
 	 */
-	if (c >= 0x00 /*NUL */ && c <= 0x1f /* US */) {
+	if (c <= 0x1f /* US */) {
 		switch (c) {
 		case 0x07 /* BEL */:
 			beep();
