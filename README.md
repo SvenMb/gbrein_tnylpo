@@ -12,7 +12,7 @@ reasonable recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.
 ## More details, please!
 Read the included man page,
-[tnylpo.1](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo.1);
+[`tnylpo.1`](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo.1);
 you can format and read
 it with the command
 ```sh
@@ -85,8 +85,8 @@ have to adapt `$(CC)` and possibly `$(CFLAGS)`.
 Copy the resulting binaries `tnylpo` and `tnylpo-convert` to a
 directory in your `PATH`
 (e. g. `/usr/local/bin`) and the man pages
-[tnylpo.1](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo.1) and
-[tnylpo-convert.1](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo-convert.1) to
+[`tnylpo.1`](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo.1) and
+[`tnylpo-convert.1`](https://gitlab.com/gbrein/tnylpo/wikis/tnylpo-convert.1) to
 an appropriate directory in your `man` hierarchy (e. g.
 `/usr/local/share/man/man1`).
 ```sh
