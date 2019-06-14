@@ -31,7 +31,7 @@
 .SH NAME
 tnylpo \- a utility to run programs witten for CP/M-80
 .SH SYNOPSIS
-.HP
+.PP
 .B tnylpo 
 .RB [ -abnrsw ]
 .RB [ -c
@@ -55,7 +55,7 @@ tnylpo \- a utility to run programs witten for CP/M-80
 .IR <command>
 .RI [ <arg>
 .RI ...]
-.HP
+.PP
 .B tnylpo -h
 .SH DESCRIPTION
 tnylpo allows the execution of programs written for the CP/M-80 operating
@@ -284,7 +284,7 @@ Unix convention of being prefixed by
 resp. some other digit),
 a string in double quotes, or a comma.
 .SS Configuration options
-.HP
+.PP
 .B drive
 .I <drive letter>
 .B  =
@@ -320,10 +320,10 @@ will use
 as default, i. e. the current working directory will be made available as
 CP/M drive A.
 .RE
-.HP
+.PP
 .B default drive =
 .I <drive letter>
-.HP
+.br
 command line option
 .B -d
 .I <drive letter>
@@ -340,12 +340,12 @@ configuration option. If
 .B default drive
 is not specified, tnylpo assumes drive A as default drive.
 .RE
-.HP
+.PP
 .B close files =
 .RB ( true
 |
 .BR false )
-.HP
+.br
 command line option
 .B -n
 .RS
@@ -364,7 +364,7 @@ but should be avoided if possible, since otherwise tnylpo might run
 out of file descriptors. By default, tnylpo actually closes files
 closed by the CP/M program.
 .RE
-.HP
+.PP
 .B logfile =
 .I  <path>
 .RS
@@ -379,10 +379,10 @@ If the
 configuration option is not used, no logging information will be written.
 There is no corresponding command line option.
 .RE
-.HP
+.PP
 .B loglevel =
 .I <level>
-.HP
+.br
 command line option
 .B -v
 .I <level>
@@ -415,12 +415,12 @@ The logging facility is a leftover from the development and testing of
 tnylpo itself; since it may provide important clues if applications do
 not work as expected, it has been retained.
 .RE
-.HP
+.PP
 .B console =
 .RB ( full
 |
 .BR line )
-.HP
+.br
 command line options
 .B -s
 or
@@ -438,12 +438,12 @@ console interface. Some other configuration options, e. g.
 are only effective in the full screen mode. By default, tnylpo uses
 the line orientated console interface.
 .RE
-.HP
+.PP
 .B screen delay =
 .RI ( <number>
 |
 .BR key )
-.HP
+.br
 command line option
 .B -t
 .RI ( <number>
@@ -462,17 +462,17 @@ of the CP/M application even if resetting the display restores the
 original screen contents or clears the screen. Default value is 0
 (don't wait).
 .RE
-.HP
+.PP
 .B lines =
 .RI ( <number>
 |
 .BR current )
-.HP
+.br
 .B columns =
 .RI ( <number>
 |
 .BR current )
-.HP
+.br
 command line options
 .B -l
 .RI ( <number>
@@ -495,12 +495,12 @@ in case of the command line options) tells tnylpo to use the current size
 of the display device. If no display size is specified in the configuration
 file or on the command line, tnylpo defaults to 24 lines of 80 columns.
 .RE
-.HP
+.PP
 .B application cursor =
 .RB ( true
 |
 .BR false )
-.HP
+.br
 command line option
 .B -w
 .RS
@@ -531,12 +531,12 @@ and
 This option is only effective in full screen console mode.
 .RE
 .RE
-.HP
+.PP
 .B exchange delete =
 .RB ( true
 |
 .BR false )
-.HP
+.br
 command line option
 .B -r
 .RS
@@ -551,13 +551,13 @@ is present), the backspace
 .RB ( ^H ,
 0x08) key and the delete (0x7f) key are reversed in full screen mode.
 .RE
-.HP
+.PP
 .RB [ alt ]
 .B char 
 .I <number>
 .B =
 .I <string>
-.HP
+.br
 .RB [ alt ]
 .B charset =
 .RB ( ascii
@@ -567,7 +567,7 @@ is present), the backspace
 .B latin1
 |
 .BR tnylpo )
-.HP
+.br
 .B unprintable =
 .I <string>
 .RS
@@ -577,7 +577,7 @@ they have no corresponding command line options and are explained below
 (see
 .BR "Character sets" ). 
 .RE
-.HP
+.PP
 .RB ( printer
 |
 .B punch
@@ -585,7 +585,7 @@ they have no corresponding command line options and are explained below
 .BR reader )
 .B file =
 .I <path>
-.HP
+.br
 .RB ( printer
 |
 .B punch
