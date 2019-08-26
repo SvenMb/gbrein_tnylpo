@@ -440,9 +440,9 @@ inst_exaf(void) {
  */
 static void
 inst_scf(void) {
-	flag_y = ((reg_a & 0x20) == 1);
+	flag_y = ((reg_a & 0x20) != 0);
 	flag_h = 0;
-	flag_x = ((reg_a & 0x08) == 1);
+	flag_x = ((reg_a & 0x08) != 0);
 	flag_n = 0;
 	flag_c = 1;
 }
@@ -453,9 +453,9 @@ inst_scf(void) {
  */
 static void
 inst_ccf(void) {
-	flag_y = ((reg_a & 0x20) == 1);
+	flag_y = ((reg_a & 0x20) != 0);
 	flag_h = flag_c;
-	flag_x = ((reg_a & 0x08) == 1);
+	flag_x = ((reg_a & 0x08) != 0);
 	flag_n = 0;
 	flag_c = (flag_c == 0);
 }
@@ -476,9 +476,9 @@ inst_halt(void) {
 static void
 inst_cpl(void) {
 	reg_a ^= 0xff;
-	flag_y = ((reg_a & 0x20) == 1);
+	flag_y = ((reg_a & 0x20) != 0);
 	flag_h = 1;
-	flag_x = ((reg_a & 0x08) == 1);
+	flag_x = ((reg_a & 0x08) != 0);
 	flag_n = 1;
 }
 
@@ -488,9 +488,9 @@ inst_cpl(void) {
  */
 static void
 rot_flags(void) {
-	flag_y = ((reg_a & 0x20) == 1);
+	flag_y = ((reg_a & 0x20) != 0);
 	flag_h = 0;
-	flag_x = ((reg_a & 0x08) == 1);
+	flag_x = ((reg_a & 0x08) != 0);
 	flag_n = 0;
 }
 
