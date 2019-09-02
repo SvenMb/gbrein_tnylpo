@@ -124,7 +124,10 @@ int default_drive = (-1);
  * to use FCBs for file I/O after closing them)
  */
 int dont_close = (-1);
-
+/*
+ * dump configuration: default is no dump
+ */
+enum dump conf_dump = 0;
 
 /*
  * maximal length of a line in the configuration file
@@ -1079,6 +1082,64 @@ premature_exit:
 
 
 /*
+ * parse dump options form configuration file
+ */
+static int
+parse_dump(enum dump *dp) {
+	int rc = 0;
+	get_token();
+	if (! check_equal(&rc)) goto premature_exit;
+	if (*dp) {
+	    	perr("%s(%d): dump options redefined", cfn, ln);
+		rc = (-1);
+		goto premature_exit;
+	}
+	do {
+		get_token();
+		if (token != 'i') {
+			pexpected("dump option");
+			rc = (-1);
+			goto premature_exit;
+		}
+		if (! wcscmp(token_ident, L"all")) {
+			*dp |= DUMP_ALL;
+		} else if (! wcscmp(token_ident, L"none")) {
+			*dp |= DUMP_NONE;
+		} else if (! wcscmp(token_ident, L"startup")) {
+			*dp |= DUMP_STARTUP;
+		} else if (! wcscmp(token_ident, L"signal")) {
+			*dp |= DUMP_SIGNAL;
+		} else if (! wcscmp(token_ident, L"exit")) {
+			*dp |= DUMP_EXIT;
+		} else if (! wcscmp(token_ident, L"error")) {
+			*dp |= DUMP_ERROR;
+		} else {
+			pexpected("dump option");
+			rc = (-1);
+			goto premature_exit;
+		}
+		get_token();
+	} while (token == ',');
+	/*
+	 * check for illegal combinations
+	 */
+	if (((*dp & DUMP_ALL) && (*dp & ~DUMP_ALL)) ||
+	    ((*dp & DUMP_NONE) && (*dp & ~DUMP_NONE)) ||
+	    ((*dp & DUMP_ERROR) && (*dp & DUMP_EXIT))) {
+	    	perr("%s(%d): illegal dump option combination", cfn, ln);
+		rc = (-1);
+		goto premature_exit;
+	}
+	/*
+	 * "all" is a macro
+	 */
+	if (*dp & DUMP_ALL) *dp |= DUMP_STARTUP | DUMP_EXIT | DUMP_SIGNAL;
+premature_exit:
+	return rc;
+}
+
+
+/*
  * read parameters from the configuration file; parameters already
  * defined on the command line take precedence
  */
@@ -1088,6 +1149,7 @@ parse_config(void) {
 	    temp_dont_close = (-1), temp_interactive = (-1),
 	    temp_screen_delay = (-1), temp_default_drive = (-1),
 	    temp_reverse_bs_del = (-1);
+	enum dump temp_dump = 0;
 	wchar_t line[L_LINE];
 	size_t l;
 	enum charset default_cs[2] = { CS_NONE, CS_NONE };
@@ -1511,6 +1573,11 @@ parse_config(void) {
 			    	rc = (-1);
 				continue;
 			}
+		} else if (! wcscmp(token_ident, L"dump")) {
+			if (parse_dump(&temp_dump)) {
+				rc = (-1);
+				continue;
+			}
 		}
 		if (token) {
 			perr("%s(%d): syntax error", cfn, ln); 
@@ -1536,6 +1603,7 @@ parse_config(void) {
 	if (screen_delay == (-1)) screen_delay = temp_screen_delay;
 	if (conf_interactive == (-1)) conf_interactive = temp_interactive;
 	if (default_drive == (-1)) default_drive = temp_default_drive;
+	if (conf_dump == 0) conf_dump = temp_dump;
 	/*
 	 * characters and character sets cannot be specified on
 	 * the command line

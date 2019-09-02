@@ -98,42 +98,15 @@ static int alt_flag_c = 0;
 
 
 /*
- * initialize the CPU emulator: allocate main memory, initialize OS emulation
- */
-int
-cpu_init(void) {
-	int rc = 0;
-	struct timeval tv;
-	/*
-	 * allocate and clear Z80 memory
-	 */
-	memory = alloc(MEMORY_SIZE);
-	memset(memory, 0, MEMORY_SIZE);
-	/*
-	 * set register R to some random value; programs (e. g. Turbo Pascal)
-	 * use R for generating random numbers
-	 *
-	 * No, this random number is not suitable for
-	 * cryptographical purposes.
-	 */
-	gettimeofday(&tv, NULL);
-	srand((unsigned) tv.tv_usec);
-	reg_r = (rand() & 0x7f);
-	/*
-	 * initialize OS emulation
-	 */
-	rc = os_init();
-	if (rc) goto premature_exit;
-premature_exit:
-	if (rc) free(memory);
-	return rc;
-}
-
-
-/*
  * termination flag
  */
 int terminate = 0;
+
+
+/*
+ * dump flag
+ */
+static sig_atomic_t dump = 0;
 
 
 /*
@@ -208,6 +181,69 @@ get_iy(void) { int iy = reg_iyh; iy <<= 8; iy |= reg_iyl; return iy; }
 
 static inline void
 set_iy(int iy) { reg_iyl = iy & 0xff; reg_iyh = (iy >> 8) & 0xff; }
+
+
+/*
+ * dump registers and memory to log file
+ */
+static void
+dump_machine(const char *label) {
+	plog("start of %s machine dump", label);
+	plog("a=%02x f=%c%c%c%c%c%c%c%c bc=%04x de=%04x hl=%04x",
+	    reg_a, flag_s ? 's' : '-', flag_z ? 'z' : '-',
+	    flag_y ? 'y' : '-', flag_h ? 'h' : '-', flag_x ? 'x' : '-',
+	    flag_p ? 'p' : '-', flag_n ? 'n' : '-', flag_c ? 'c' : '-',
+	    get_bc(), get_de(), get_hl());
+	plog("a\'=%02x f\'=%c%c%c%c%c%c%c%c bc\'=%04x de\'=%04x hl\'=%04x",
+	    alt_reg_a, alt_flag_s ? 's' : '-',
+	    alt_flag_z ? 'z' : '-', alt_flag_y ? 'y' : '-',
+	    alt_flag_h ? 'h' : '-', alt_flag_x ? 'x' : '-',
+	    alt_flag_p ? 'p' : '-', alt_flag_n ? 'n' : '-',
+	    alt_flag_c ? 'c' : '-', (alt_reg_b << 8) | alt_reg_c,
+	    (alt_reg_d << 8) | alt_reg_e, (alt_reg_h << 8) | alt_reg_l);
+	plog("ix=%04x iy=%04x sp=%04x pc=%04x, r=%02x i=%02x",
+	    get_ix(), get_iy(), reg_sp, reg_pc, reg_r, reg_i);
+	plog("interrupts %s", flag_i ? "enabled" : "disabled");
+	plog_dump(0, MEMORY_SIZE);
+	plog("end of %s machine dump", label);
+}
+
+
+/*
+ * initialize the CPU emulator: allocate main memory, initialize OS emulation
+ */
+int
+cpu_init(void) {
+	int rc = 0;
+	struct timeval tv;
+	/*
+	 * allocate and clear Z80 memory
+	 */
+	memory = alloc(MEMORY_SIZE);
+	memset(memory, 0, MEMORY_SIZE);
+	/*
+	 * set register R to some random value; programs (e. g. Turbo Pascal)
+	 * use R for generating random numbers
+	 *
+	 * No, this random number is not suitable for
+	 * cryptographical purposes.
+	 */
+	gettimeofday(&tv, NULL);
+	srand((unsigned) tv.tv_usec);
+	reg_r = (rand() & 0x7f);
+	/*
+	 * initialize OS emulation
+	 */
+	rc = os_init();
+	if (rc) goto premature_exit;
+	/*
+	 * perform startup dump
+	 */
+	if (conf_dump & DUMP_STARTUP) dump_machine("startup");
+premature_exit:
+	if (rc) free(memory);
+	return rc;
+}
 
 
 /*
@@ -2646,7 +2682,27 @@ static jmp_buf signal_jmp;
  * signal handler just jumps to the top of the main loop
  */
 static void handler(int s) {
-	longjmp(signal_jmp, 1);
+	struct sigaction sa;
+	switch (s) {
+	case SIGTERM:
+	case SIGQUIT:
+	case SIGINT:
+		/*
+		 * these signals are handled only once; repeated
+		 * occurrences are ignored
+		 */
+		sa.sa_handler = SIG_IGN;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sigaction(SIGTERM, &sa, NULL);
+		sigaction(SIGQUIT, &sa, NULL);
+		sigaction(SIGINT, &sa, NULL);
+		longjmp(signal_jmp, 1);
+		break;
+	case SIGUSR1:
+		dump = 1;
+		break;
+	}
 }
 
 
@@ -2663,6 +2719,7 @@ void
 cpu_run(void) {
 	int poll_counter = 0;
 	const struct instruction *inst_p;
+	struct sigaction sa;
 	/*
 	 * catch signals for termination of a runaway program
 	 */
@@ -2672,11 +2729,38 @@ cpu_run(void) {
 			term_reason = ERR_SIGNAL;
 		}
 	} else {
-		signal(SIGTERM, &handler);
-		signal(SIGQUIT, &handler);
-		signal(SIGINT, &handler);
+		/*
+		 * signals causing the emulation to terminate with
+		 * status ERR_SIGNAL; the handlers block the occurrence
+		 * of the other signals to avoid calling logjmp() twice.
+		 */
+		sa.sa_handler = handler;
+		sigemptyset(&sa.sa_mask);
+		sigaddset(&sa.sa_mask, SIGTERM);
+		sigaddset(&sa.sa_mask, SIGQUIT);
+		sigaddset(&sa.sa_mask, SIGINT);
+		sa.sa_flags = 0;
+		sigaction(SIGTERM, &sa, NULL);
+		sigaction(SIGQUIT, &sa, NULL);
+		sigaction(SIGINT, &sa, NULL);
+	}
+	/*
+	 * install signal handler if dump signals are requested
+	 */
+	if (conf_dump & DUMP_SIGNAL) {
+		sa.sa_handler = handler;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sigaction(SIGUSR1, &sa, NULL);
 	}
 	while (! terminate) {
+		/*
+		 * dump machine state
+		 */
+		if (dump) {
+			dump = 0;
+			dump_machine("signal");
+		}
 		/*
 		 * mark start of new instruction
 		 */
@@ -2795,6 +2879,14 @@ cpu_exit(void) {
 	 * finalize OS emulation
 	 */
 	rc = os_exit();
+	/*
+	 * perform exit or error dump
+	 */
+	if (conf_dump & DUMP_EXIT) {
+		dump_machine("exit");
+	} else if (conf_dump & DUMP_ERROR) {
+		if (term_reason > OK_CTRLC) dump_machine("error");
+	}
 	/*
 	 * display reason for program termination
 	 */

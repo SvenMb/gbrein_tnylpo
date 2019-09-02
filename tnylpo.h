@@ -161,6 +161,20 @@ extern int reverse_bs_del;
 
 
 /*
+ * dump configuration
+ */
+enum dump {
+	DUMP_NONE = 0x01,
+	DUMP_STARTUP = 0x02,
+	DUMP_EXIT = 0x04,
+	DUMP_ERROR = 0x08,
+	DUMP_SIGNAL = 0x10,
+	DUMP_ALL = 0x20
+};
+extern enum dump conf_dump;
+
+
+/*
  * read the optional configuration file
  */
 extern int read_config(char *cfn);

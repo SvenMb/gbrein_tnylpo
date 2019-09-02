@@ -91,7 +91,9 @@ plog(const char *format, ...) {
 }
 
 
-#define DUMP_LINE 8
+#define DUMP_LINE 16
+#define WRAP(n) ((n) & 0xffff)
+#define PRINT(c) (((c) >= 0x21 && (c) <= 0x7e) ? (c) : '.')
 
 /*
  * dump a section of the Z80 memory to the log file; start + length
@@ -105,29 +107,38 @@ plog_dump(int start, int length) {
 	 * check if log file is open
 	 */
 	if (! log_fp) return;
-	for (i = 0; i < length; i += DUMP_LINE) {
+	for (i = 0; i < length; ) {
+		/*
+		 * compress long stretches of uniform bytes in the dump:
+		 * if there are more than two consecutive lines of the
+		 * same byte value, they are replaced by a single line.
+		 */
+		c = memory[WRAP(start + i)];
+		for (j = 1; i + j < length &&
+		    memory[WRAP(start + i + j)] == c; j++);
+		if (i + j < length) j = (j / DUMP_LINE) * DUMP_LINE;
+		if (j > DUMP_LINE) {
+			plog("%04x-%04x: all %02x (%c)", WRAP(start + i),
+			    WRAP(start + i + j - 1), c, PRINT(c));
+			i += j;
+			continue;
+		}
 		cp = buffer;
-		cp += sprintf(cp, "%04x:", (start + i) & 0xffff);
+		cp += sprintf(cp, "%04x:", WRAP(start + i));
 		for (j = 0; j < DUMP_LINE && i + j < length; j++) {
-			c = memory[(start + i + j) & 0xffff];
+			c = memory[WRAP(start + i + j)];
 			cp += sprintf(cp, " %02x", c);
 		}
 		for (; j < DUMP_LINE; j++) cp += sprintf(cp, "   ");
 		cp += sprintf(cp, " |");
 		for (j = 0; j < DUMP_LINE && i + j < length; j++) {
-			c = memory[(start + i + j) & 0xffff];
-			/*
-			 * ASCII specific!
-			 */
-			if (c >= 0x21 /* ! */ && c <= 0x7e /* ~ */) {
-				cp += sprintf(cp, "%c", c);
-			} else {
-				cp += sprintf(cp, ".");
-			}
+			c = memory[WRAP(start + i + j)];
+			cp += sprintf(cp, "%c", PRINT(c));
 		}
 		for (; j < DUMP_LINE; j++) cp += sprintf(cp, " ");
 		cp += sprintf(cp, "|");
 		plog("%s", buffer);
+		i += DUMP_LINE;
 	}
 }
 
@@ -163,18 +174,19 @@ usage(void) {
 	perr("usage: %s [ <options> ] command [ <parameters> ... ]",
 	    prog_name);
 	perr("valid <options> are");
-	perr("    -a            use alternate charset");
-	perr("    -b            use line mode console");
-	perr("    -c (<n> | @)  number of full screen mode columns *");
-	perr("    -d <drive>    set default drive");
-	perr("    -f <fn>       read configuration file");
-	perr("    -l (<n> | @)  number of full screen mode lines *");
-	perr("    -n            never actually close files");
-	perr("    -r            reverse backspace and delete keys *");
-	perr("    -s            use full screen mode console");
-	perr("    -t (<n> | @)  delay before exiting full screen mode *");
-	perr("    -v <level>    set log level");
-	perr("    -w            use alternate function keys *");
+	perr("    -a               use alternate charset");
+	perr("    -b               use line mode console");
+	perr("    -c (<n>|@)       number of full screen mode columns *");
+	perr("    -d <drive>       set default drive");
+	perr("    -f <fn>          read configuration file");
+	perr("    -l (<n>|@)       number of full screen mode lines *");
+	perr("    -n               never actually close files");
+	perr("    -r               reverse backspace and delete keys *");
+	perr("    -s               use full screen mode console");
+	perr("    -t (<n>|@)       delay before exiting full screen mode *");
+	perr("    -v <level>       set log level");
+	perr("    -w               use alternate function keys *");
+	perr("    -z {a|e|i|n|s|x} set dump options");
 	perr("options with an asterisk (*) apply only to full screen mode");
 }
 
@@ -228,7 +240,7 @@ get_config(int argc, char **argv) {
 	size_t l;
 	unsigned long ul;
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:")) != EOF) {
+	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:z:")) != EOF) {
 		switch (opt) {
 		case 'a':
 			/*
@@ -370,6 +382,70 @@ get_config(int argc, char **argv) {
 					rc = (-1);
 				} else {
 					screen_delay = (int) ul;
+				}
+			}
+			break;
+		case 'z':
+			/*
+			 * set dump configuration
+			 *
+			 * Adding a dump function (and using -z as the
+			 * command line option) has been inspired by a
+			 * branch by Eric Scott, which implemented a
+			 * post mortem dump only.
+			 */
+			if (conf_dump) {
+				only_once('d');
+				rc = (-1);
+			} else {
+				/*
+				 * parse valid suboptions
+				 */
+				for (cp = optarg; *cp; cp++) {
+					switch (*cp) {
+					case 'n':
+						conf_dump |= DUMP_NONE;
+						break;
+					case 's':
+						conf_dump |= DUMP_STARTUP;
+						break;
+					case 'x':
+						conf_dump |= DUMP_EXIT;
+						break;
+					case 'i':
+						conf_dump |= DUMP_SIGNAL;
+						break;
+					case 'e':
+						conf_dump |= DUMP_ERROR;
+						break;
+					case 'a':
+						conf_dump |= DUMP_ALL;
+						break;
+					default:
+						perr("illegal -z suboption "
+						    "\'%c\'", (int) *cp);
+						rc = (-1);
+						break;
+					}
+				}
+				/*
+				 * check for valid combinations
+				 */
+				if (((conf_dump & DUMP_ALL) &&
+				    (conf_dump & ~DUMP_ALL)) ||
+				    ((conf_dump & DUMP_NONE) &&
+				    (conf_dump & ~DUMP_NONE)) ||
+				    ((conf_dump & DUMP_EXIT) &&
+				    (conf_dump & DUMP_ERROR))) {
+					perr("inconsistent -z suboptions");
+					rc = (-1);
+				}
+				/*
+				 * expand -za macro option
+				 */
+				if (conf_dump & DUMP_ALL) {
+					conf_dump |= DUMP_STARTUP |
+					    DUMP_EXIT | DUMP_SIGNAL;
 				}
 			}
 			break;

@@ -52,6 +52,7 @@ tnylpo \- a utility to run programs witten for CP/M-80
 .BR @ )]
 .RB [ -v
 .IR <level> ]
+.RB [ -z { a | e | i | n | s | x }]
 .IR <command>
 .RI [ <arg>
 .RI ...]
@@ -606,6 +607,65 @@ and
 there are no corresponding command line options. Details are explained
 below (see
 .BR "Character devices" ).
+.RE
+.PP
+.B dump = none
+.br
+.B dump = all
+.br
+.B dump =
+.RB ( startup
+|
+.B exit
+|
+.B error
+|
+.BR signal )
+.RB [ ", " ...]
+.br
+command line options
+.BR -zn ", "
+.BR -za ", and "
+.BR -z { s | x | e | i }
+.RS
+.PP
+define if and when tnylpo writes a machine dump (including register
+values and the contents of main memory) to the log file.
+The keywords
+.BR startup ,
+.BR exit ,
+.BR error ,
+and
+.B signal
+(resp. the suboptions
+.BR s ,
+.BR x ,
+.BR e ,
+and
+.BR i)
+request a dump at program startup (immediately before passing control
+to the CP/M command), at program exit, at program exit due to a fatal
+execution error, or at the receipt of a
+.B SIGUSR1
+signal and may be arbitrarily combined (only
+.B exit
+and
+.B error
+are mutually exclusive). 
+.B dump = all
+(resp.
+.BR -za )
+is a shorthand for
+.B dump = startup, exit, signal
+(resp.
+.BR -zsxi ),
+and
+.B dump = none
+(resp.
+.BR -zn )
+turns all dumps off (this is also the default setting). Dumps are only written
+if a log file has been defined by the configuration option
+.BR logfile .
 .RE
 .SS Terminal emulation
 tnylpo provides a
