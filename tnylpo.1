@@ -978,7 +978,7 @@ return the sequences
 is useful if some other program or the host operating system messes up
 the user's screen. F10 sends a SIGINT to tnylpo, causing the emulation
 to stop abruptly, but allowing tnylpo itself to exit gracefully (this key
-is ment as a last-resort way of stopping a CP/M program gone haywire).
+is meant as a last-resort way of stopping a CP/M program gone haywire).
 .SS Character devices
 Besides the bidirectional console device, CP/M supports three unidirectional
 character devices, the output-only printer and paper tape punch devices
@@ -1073,14 +1073,41 @@ and
 .BR LISTST ),
 which are (contrary to the disk I/O specific BIOS entries) fully
 functional under tnylpo.
+.SS Program termination
+.PP
+tnylpo terminates as soon as the CP/M program it executes terminates
+by either calling BDOS function 0 (System Reset) or BIOS function 1
+(Warm Boot); jumping to address 0x0000 or using the stack area set up by
+tnylpo and ending execution by a RET instruction is equivalent to calling
+BIOS function 1 directly. Finally, the user may terminate a program
+by pressing 
+.B ^C
+(0x03) when prompted for console input by BDOS function 10
+(Read Console Buffer). All these forms of program termination are considered
+regular for the purpose of determining the exit status from tnylpo
+(see below, under EXIT STATUS).
+.PP
+Furthermore, a CP/M program will be terminated if it performs
+an action considered illegal by tnylpo, like trying to write to a
+read-only file or to a file on a disk configured as read-only,
+passing invalid arguments to system calls, accessing a disk drive not
+configured, or requesting an illegal sequence of operations (like trying
+to read from a disk file which has already been closed). 
+.PP
+When the full screen console is active, a program may be terminated by the
+user pressing the F10 key (see above, "Function keys"); this is
+equivalent to sending a SIGINT to tnylpo from another terminal/terminal
+window. Pressing F10 terminates the CP/M program abruptly and should
+(like sending a signal to tnylpo) only be used as a last resort when
+dealing with a hung application.
+.PP
+Both program termination due to an illegal action and terminating
+a program by pressing F10 (or sending tnylpo a signal) are considered
+irregular forms of program termination.
 .SH EXIT STATUS
 tnylpo exits with status 0 if it didn't encounter a fatal error and status 1
-otherwise. Fatal errors include command line and configuration errors
-as well as certain errors by the CP/M program deemed unrecoverable by
-tnylpo, e. g. trying to write a read-only file or a file on a
-disk configured as read-only,
-invalid arguments to system calls, or an illegal sequence of operations
-(like trying to read from a disk file which has already been closed).
+otherwise. Fatal errors are command line errors, configuration file errors,
+or an irregular termination of the CP/M program (see above).
 .PP
 Since CP/M-80 (at least in the version 2.2) has no concept of a program
 exit status, the CP/M program
