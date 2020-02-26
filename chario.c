@@ -87,7 +87,7 @@ restore_terminal(void) {
  * if the console is the VT52 emulation, crt_init() is called; otherwise,
  * if stdin/stdout are not redirected from the terminal, the parameters
  * of the underlying terminal device are modified to be suitable for
- * CP/M style console input and output 
+ * CP/M style console input and output
  */
 int
 console_init(void) {
@@ -532,7 +532,7 @@ reader_in(void) {
 	/*
 	 * open reader file if not already opened
 	 */
-	if (! reader_fp) { 
+	if (! reader_fp) {
 		reader_fp = fopen(conf_reader, conf_reader_raw ? "rb" : "r");
 		if (! reader_fp) {
 			reader_error = errno;
@@ -621,7 +621,7 @@ reader_in(void) {
 				}
 			}
 		}
-	} 
+	}
 premature_exit:
 	return c;
 }
@@ -637,7 +637,7 @@ reader_close(void) {
 	 * report error which caused the reader to become unavailable
 	 */
 	if (reader_error) {
-		perr("error on %s: %s", conf_reader, strerror(reader_error)); 
+		perr("error on %s: %s", conf_reader, strerror(reader_error));
 		rc = (-1);
 	}
 	if (reader_fp) {

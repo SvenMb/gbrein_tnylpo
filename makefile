@@ -56,7 +56,7 @@ else
 CFLAGS+=-m64
 LIBS=-L $(NCURSESROOT)/lib/64 -R $(NCURSESROOT)/lib/64
 endif
-LIBS+=-lncursesw
+LIBS+=-lncursesw -lrt
 endif
 OBJS=main.o readconf.o util.o screen.o cpu.o os.o chario.o
 CONVERT_OBJS=tnylpo-convert.o readconf.o util.o

@@ -172,7 +172,7 @@ get_config(int argc, char **argv) {
 					target_unix = (opt == 'u');
 				}
 			}
-			break;	
+			break;
 		case 'e':
 			/*
 			 * treat unconvertible characters as error

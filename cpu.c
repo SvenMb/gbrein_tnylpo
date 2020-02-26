@@ -38,8 +38,10 @@
 #include <wchar.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <time.h>
 
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "tnylpo.h"
 
@@ -156,7 +158,7 @@ static inline int
 get_bc(void) { int bc = reg_b; bc <<= 8; bc |= reg_c; return bc; }
 
 static inline void
-set_bc(int bc) { reg_c = bc & 0xff; reg_b = (bc >> 8) & 0xff; } 
+set_bc(int bc) { reg_c = bc & 0xff; reg_b = (bc >> 8) & 0xff; }
 
 static inline int
 get_de(void) { int de = reg_d; de <<= 8; de |= reg_e; return de; }
@@ -747,14 +749,14 @@ sub8(unsigned char minuend, unsigned char subtrahend, int carry) {
 	flag_y = ((df & 0x20) != 0);
 	flag_z = (df == 0);
 	flag_s = ((df & 0x80) != 0);
-	return (unsigned char) df;	
+	return (unsigned char) df;
 }
 
 
 /*
  * returns s1 + s2 + carry, sets flags
  */
-static unsigned 
+static unsigned
 add16(unsigned s1, unsigned s2, int carry) {
 	int c14 = 0, i;
 	unsigned su = 0, cy = carry ? 1 : 0, ma = 1;
@@ -780,7 +782,7 @@ add16(unsigned s1, unsigned s2, int carry) {
 /*
  * returns s1 - s2 - carry, sets flags
  */
-static unsigned 
+static unsigned
 sub16(unsigned mi, unsigned sb, int carry) {
 	int c14 = 0, i;
 	unsigned df = 0, cy = carry ? 1 : 0, ma = 1;
@@ -996,7 +998,7 @@ inst_daa(void) {
 	flag_c = new_c;
 	flag_h = new_h;
 }
- 
+
 
 /*
  * 8-bit add to A
@@ -1283,7 +1285,7 @@ inst_push(void) {
 		default: word = get_hl(); break;
 		}
 		break;
-	default: 
+	default:
 		/*
 		 * AF
 		 */
@@ -1334,7 +1336,7 @@ inst_pop(void) {
 		default: set_hl(word); break;
 		}
 		break;
-	default: 
+	default:
 		/*
 		 * AF
 		 */
@@ -1766,7 +1768,7 @@ ldx(int up) {
 	} else {
 		hl = ((hl + 0xffff) & 0xffff);
 		de = ((de + 0xffff) & 0xffff);
-	}	
+	}
 	bc = ((bc + 0xffff) & 0xffff);
 	set_bc(bc);
 	set_de(de);
@@ -2107,7 +2109,7 @@ fetch(void) {
  */
 static inline int
 fetch_m1(void) {
-	int t = reg_r; 
+	int t = reg_r;
 	int opcode = fetch();
 	/*
 	 * increase the lower 7 bits of R by 1, leave bit 7 unchanged
@@ -2717,9 +2719,18 @@ static void handler(int s) {
  */
 void
 cpu_run(void) {
-	int poll_counter = 0;
+	int poll_counter = 0, delay_counter = 0;
 	const struct instruction *inst_p;
 	struct sigaction sa;
+	struct timespec delay;
+	/*
+	 * initialize the nanosecond delay value
+	 */
+	if (delay_nanoseconds > 0) {
+		memset(&delay, 0, sizeof delay);
+		delay.tv_sec = delay_nanoseconds / 1000000000;
+		delay.tv_nsec = delay_nanoseconds % 1000000000;
+	}
 	/*
 	 * catch signals for termination of a runaway program
 	 */
@@ -2835,6 +2846,17 @@ cpu_run(void) {
 			poll_counter = 0;
 			console_poll();
 		}
+		if (delay_count > 0) {
+			/*
+			 * add a delay of delay_nanoseconds every
+			 * delay_count emulated instructions
+			 */
+			delay_counter++;
+			if (delay_counter >= delay_count) {
+				delay_counter = 0;
+				nanosleep(&delay, NULL);
+			}
+		}
 	}
 }
 
@@ -2868,7 +2890,7 @@ dump_plane(unsigned long counters[256], const char *name) {
 	}
 }
 
-		
+
 /*
  * clean up after emulation run
  */

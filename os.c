@@ -848,10 +848,10 @@ os_init(void) {
 	/*
 	 * four dummy error vectors all point to WBOOT magic address
 	 */
-	memory[BDOS_START + 3] = memory[BDOS_START + 5] = 
+	memory[BDOS_START + 3] = memory[BDOS_START + 5] =
 	    memory[BDOS_START + 7] = memory[BDOS_START + 9] =
 	       ((MAGIC_ADDRESS + 2) & 0xff);
-	memory[BDOS_START + 4] = memory[BDOS_START + 6] = 
+	memory[BDOS_START + 4] = memory[BDOS_START + 6] =
 	    memory[BDOS_START + 8] = memory[BDOS_START + 10] =
 	       (((MAGIC_ADDRESS + 2) >> 8) & 0xff);
 
@@ -1466,7 +1466,7 @@ get_unix_name(int fcb, char unix_name[L_UNIX_NAME], const char *caller) {
 	 */
 	for (i = 0; i < lfn; i++) {
 		if (! is_valid_in_cfn(fn[i])) goto premature_exit;
-	}	
+	}
 	/*
 	 * copy extension, clearing high bits; calculate length of extension
 	 */
@@ -1794,7 +1794,7 @@ bdos_close_file(void) {
 	 */
 	fdp->fd = (-1);
 	/*
-	 * destroy file structure 
+	 * destroy file structure
 	 */
 	free_filedata(fdp);
 premature_exit:
@@ -2063,6 +2063,16 @@ set_offset(int fcb, int offset) {
 
 
 /*
+ * dump current DMA area
+ */
+static void
+dump_record(void) {
+	plog("dump of record(0x%04x):", current_dma);
+	plog_dump(current_dma, 128);
+}
+
+
+/*
  * read a 128 byte record from a file to the current DMA area;
  * return (-1) on EOF; incomplete records are filled with 0x1a (SUB/^Z)
  */
@@ -2085,7 +2095,7 @@ read_record(int fcb, struct file_data *fdp, const char *caller) {
 		n -=t;
 	}
 	if (n < 128) memset(bp, 0x1a /* SUB */, n);
-	if (log_level >= LL_RECORDS && n < 128) plog_dump(current_dma, 128);
+	if (log_level >= LL_RECORDS && n < 128) dump_record();
 	return (n == 128) ? (-1) : 0;
 }
 
@@ -2112,7 +2122,7 @@ write_record(int fcb, struct file_data *fdp, const char *caller) {
 		n -=t;
 	}
 	fdp->flags |= FILE_WRITTEN;
-	if (log_level >= LL_RECORDS) plog_dump(current_dma, 128);
+	if (log_level >= LL_RECORDS) dump_record();
 	return n ? (-1) : 0;
 }
 
@@ -3215,7 +3225,7 @@ magic_home(void) {
  * BIOS SELDSK
  */
 static void
-magic_seldsk(void) { 
+magic_seldsk(void) {
 	static const char func[] = "bios seldsk";
 	SYS_ENTRY(func, REGS_C|REGS_E);
 	/*
@@ -3263,13 +3273,13 @@ magic_setdma(void) {
  * BIOS READ
  */
 static void
-magic_read(void) { 
+magic_read(void) {
 	static const char func[] = "bios read";
 	SYS_ENTRY(func, 0);
 	/*
 	 * report an error
 	 */
-	reg_a = 1; 
+	reg_a = 1;
 	SYS_EXIT(func, REGS_A);
 }
 
@@ -3278,13 +3288,13 @@ magic_read(void) {
  * BIOS WRITE
  */
 static void
-magic_write(void) { 
+magic_write(void) {
 	static const char func[] = "bios write";
 	SYS_ENTRY(func, REGS_C);
 	/*
 	 * report an error
 	 */
-	reg_a = 1; 
+	reg_a = 1;
 	SYS_EXIT(func, REGS_A);
 }
 
@@ -3362,7 +3372,7 @@ magic_delay(void) {
 		}
 		/*
 		 * wait this long
-		 */ 
+		 */
 		select(0, NULL, NULL, NULL, &t);
 		/*
 		 * poll the console to keep window resizing etc. happy

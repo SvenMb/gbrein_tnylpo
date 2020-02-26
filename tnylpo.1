@@ -48,10 +48,14 @@ tnylpo \- a utility to run programs written for CP/M-80
 .BR @ )]
 .RB [ -t
 .RI ( <n>
-.B |
+|
 .BR @ )]
 .RB [ -v
 .IR <level> ]
+.RB [ -y
+.RB ( n
+|
+.IR <count>,<nanoseconds> )]
 .RB [ -z { a | e | i | n | s | x }]
 .IR <command>
 .RI [ <arg>
@@ -134,10 +138,10 @@ integrate under Unix), among them user areas, the
 rudimentary character device redirection implemented by the I/O byte,
 file attributes, and the printer echo. Whereever some functionality has
 been left out, care has been taken not to offend CP/M programs unduly
-(programs may e. g. set the user area, and on query tnylpo will report
+(programs may e.g. set the user area, and on query tnylpo will report
 the current value back to them, but will ignore it otherwise). As a rule,
 tnylpo or Unix offer better solutions to replace the omitted CP/M
-features, e. g. different tnylpo configurations (and drives/directories)
+features, e.g. different tnylpo configurations (and drives/directories)
 for different applications
 or users (user areas), shell output redirection (I/O byte),
 .BR chmod (1)
@@ -231,7 +235,7 @@ If this argument contains
 a slash
 .RB ( / ),
 it is interpreted as a Unix path name, otherwise it is
-treated as a CP/M file name, i. e. it may be prefixed by a drive specification
+treated as a CP/M file name, i.e. it may be prefixed by a drive specification
 and is interpreted as relative to the path corresponding to this drive or
 the default drive according to tnylpo's configuration (see below). In both
 cases, the suffix
@@ -240,7 +244,7 @@ is appended if the file name does not already end in
 .BR .com .
 .PP
 All further positional arguments are passed as command line arguments to
-the CP/M program (i. e., they are converted to upper case and copied to
+the CP/M program (i.e., they are converted to upper case and copied to
 the default DMA area at 0x0080; additionally, the default
 FCB at 0x005c is initialized according to the second
 and third positional arguments).
@@ -318,7 +322,7 @@ will use
 .B drive a = """."""
 .RE
 .PP
-as default, i. e. the current working directory will be made available as
+as default, i.e. the current working directory will be made available as
 CP/M drive A.
 .RE
 .PP
@@ -332,7 +336,7 @@ command line option
 .PP
 defines the drive identified by
 .I <drive letter>
-(a single lower case letter in the range a\(enp) as default drive, i. e.
+(a single lower case letter in the range a\(enp) as default drive, i.e.
 the drive all file specifications not including an explicit drive name
 refer to. This drive must be assigned to a host system directory, either
 implicitly or by the
@@ -358,7 +362,7 @@ is set to
 (or if the
 .B -n
 command line option is present), files closed by the CP/M program
-are kept open by tnylpo, i. e. the corresponding FCBs are not
+are kept open by tnylpo, i.e. the corresponding FCBs are not
 invalidated. This is required by some CP/M programs (see
 .BR "File closing" ),
 but should be avoided if possible, since otherwise tnylpo might run
@@ -403,7 +407,7 @@ additionally, count the machine instructions executed by the emulator; at
 program termination, tnylpo will output tables showing which instructions
 have been executed how often.
 .IP 2
-additionally, trace FDOS functions (i. e. BDOS functions related to file I/O).
+additionally, trace FDOS functions (i.e. BDOS functions related to file I/O).
 .IP 3
 additionally, dump FCBs for FDOS functions using a FCB.
 .IP 4
@@ -434,7 +438,7 @@ tells tnylpo to use the full screen VT52 emulation
 or the line orientated
 .RB ( line ,
 .BR -b )
-console interface. Some other configuration options, e. g.
+console interface. Some other configuration options, e.g.
 .BR lines ", " columns ", " "application cursor" ", and " "screen delay"
 are only effective in the full screen mode. By default, tnylpo uses
 the line orientated console interface.
@@ -521,7 +525,7 @@ the control characters
 .B ^D
 (0x04), or
 .B ^X
-(0x18) to the running CP/M program (i. e. the appropriate cursor motion
+(0x18) to the running CP/M program (i.e. the appropriate cursor motion
 commands for programs like WordStar or Turbo Pascal). Otherwise, the
 cursor keys will generate the default VT52 escape sequences, 
 .BR "<esc> A" ,
@@ -609,6 +613,42 @@ below (see
 .BR "Character devices" ).
 .RE
 .PP
+.B cpu delay =
+.IB <count> " , " <nanoseconds>
+.br
+command line options
+.BR -yn " and "
+.BI -y <count> , <nanoseconds>
+.RS
+.PP
+slow down the emulation by adding a delay (specified by
+.IR <nanoseconds> ) 
+after every
+.I <count>
+instructions executed by the emulated CPU. The command line option
+.B -yn
+disables this delay, overriding a delay specified
+in the configuration file. Slowing the emulation allows using
+software (e.g. interactive games) which would otherwise run much to
+fast under tnylpo; another application is reducing the high load tnylpo
+puts on the host CPU.
+.PP
+Useful values for
+.I <count>
+and
+.I <nanoseconds> 
+depend on the speed of the host CPU, on the host operating system, and
+on the particular application program; they need to be determined by
+experimentation. Please bear in mind that the minimal useful delay (i.e. the
+minimal value for
+.IR <nanoseconds> )
+depends on the host operating system and may be as large as several
+milliseconds; since smaller delays may be rounded up to that minimum
+implicitly, specifying e.g.
+.B -y1,1
+may give unexpected results.
+.RE
+.PP
 .B dump = none
 .br
 .B dump = all
@@ -683,7 +723,7 @@ number of extensions, among them the ability to support screen sizes of
 up to 95 by 95 characters (this limitation is due to the limitations of the
 VT52 direct cursor positioning command), eight-bit operation, a dynamically
 switchable alternate character set, insert and delete line commands, and
-bold, underlined, inverted, and blinking (i. e. everybody's favourite)
+bold, underlined, inverted, and blinking (i.e. everybody's favourite)
 character rendition. To protect the CP/M application (resp. its user)
 from the effects of screen resizing, the terminal emulation provides a
 fixed size screen area (typically 80 columns by 24 lines, but this may be
@@ -697,7 +737,7 @@ will be invisible to the user, but will (re-)appear as soon as the window
 is enlarged.
 .PP
 The terminal emulation (like the VT52) does not do an automatic line wrap
-(i. e. the cursor will not move to the first column of the next line if
+(i.e. the cursor will not move to the first column of the next line if
 a character is displayed in the last column of a line) and supports
 (or at least tolerates) all of the VT52 control sequences:
 .TP
@@ -767,7 +807,7 @@ hight of the display moves to cursor to the last line.
 identify terminal type; the terminal emulation responds by sending the
 sequence
 .B <esc> / K
-(0x1b 0x2f 0x4b), i. e. it identifies itself as VT52 without
+(0x1b 0x2f 0x4b), i.e. it identifies itself as VT52 without
 hardcopy device
 .TP
 .BR "<esc> [ (0x1b 0x5b)" " and " "<esc> \\ (0x1b 0x5c)"
@@ -1167,7 +1207,7 @@ BDOS area is a (hopefully inoffensive) dummy.
 .PP
 .SS Direct access to the disk drives
 All programs trying to access the CP/M disk structure directly
-(e. g. disk editors) will not work, since there is no underlying CP/M disk
+(e.g. disk editors) will not work, since there is no underlying CP/M disk
 structure (tnylpo translates FDOS calls into operations on Unix files); all
 disk related BIOS calls are implemented as dummy functions (those few which
 can return an error indication 
@@ -1196,7 +1236,7 @@ the emulated disk from the returned information.
 .SS Console Command Processor
 .PP
 tnylpo doesn't emulate the CCP, so every program using its features
-(by e. g. creating a
+(by e.g. creating a
 .B $$$.SUB
 file and expecting the CCP to execute its
 contents) will not work correctly. Ending a program by simply returning
@@ -1225,7 +1265,7 @@ list are stored in the FCBs of open CP/M files (a 16 bit reference number
 is stored at offsets 16 and 17 in the FCBs, and the same number XORed by
 0xafcb is stored at offsets 18 and 19). This allows programs to copy
 the FCBs of open files and use the copies to further access the same files
-(e. g. programs written in Turbo Pascal do such things). The drive and file
+(e.g. programs written in Turbo Pascal do such things). The drive and file
 name portions of a FCB are only referenced by BDOS functions
 15, 17, 19, 22, 23, 30, and 35, all other functions (especially the
 read and write functions) use the file reference number to identify the
@@ -1244,7 +1284,7 @@ Hopefully, few programs will take offence at this difference.
 Normally, closing a file in a CP/M program (BDOS function 16) will cause
 tnylpo to close the
 corresponding Unix file and free its entry in the file list. This causes
-problems with certain CP/M software (e. g. dBase II), which continue to
+problems with certain CP/M software (e.g. dBase II), which continue to
 use FCBs for file operations after calling BDOS function 16. Since the
 close operation just writes the updated FCB data back to the disk
 directory (but doesn't change the FCB), this is possible in CP/M-80
@@ -1265,7 +1305,7 @@ by a CP/M program, this may
 cause tnylpo to run out of files, since the closing of all Unix files is
 deferred until program termination.
 .SS Text file format
-Disk file I/O is always done untranslated, i. e. the contents
+Disk file I/O is always done untranslated, i.e. the contents
 of disk files written by programs running in tnylpo are always in the
 character set used internally by the CP/M emulation. Likewise, the line end
 convention in text files is that of CP/M
@@ -1299,7 +1339,7 @@ conveniently using the companion program
 .BR tnylpo-convert (1).
 .SS Performance
 tnylpo has been optimized for portability, not for performance; some
-parts of the processor emulation (e. g. the addition and subtraction
+parts of the processor emulation (e.g. the addition and subtraction
 operations) may be ridiculously inefficient compared to a hand-optimized
 assembler version (or even a C version making moderate use of platform
 specific things like byte order or number representation). On the plus
@@ -1335,7 +1375,7 @@ CP/M machines or emulators.
 .SS The name of the program
 "tnylpo" is a fantasy word. Neither is it an acronym nor does it
 have any meaning I know of (which is the main reason I chose it).
-"tnylpo" is pronounced like a native speaker of German (e. g. I)
+"tnylpo" is pronounced like a native speaker of German (e.g. I)
 would naively pronounce
 "tn\(:ulpo" (or like a speaker of Finnish would pronounce "tnylpo",
 provided she survives the initial consonant cluster). In
@@ -1372,7 +1412,7 @@ Unix
 locale settings (other aspects of the current locale are ignored);
 unfortunately, only ASCII based systems and locales
 are supported, since there is no character set independent way to represent
-some of the control characters relevant for CP/M (e. g.
+some of the control characters relevant for CP/M (e.g.
 .B ^C
 and
 .BR ^Z ).
@@ -1385,7 +1425,7 @@ tnylpo tries to hide unsuitable files in host directories used as CP/M
 drives from CP/M programs; file searches and open requests will ignore
 everything but regular files up to 8MB in size which have acceptable
 names. Unfortunately, this attempt at hiding other objects
-is far from perfect: a CP/M program trying e. g. to create a file whose name
+is far from perfect: a CP/M program trying e.g. to create a file whose name
 matches the name of a (hidden) directory will mysteriously fail (a rename
 operation may meet similar problems). It is therefore recommended to reserve
 directories used as CP/M drives to conforming regular files or to give all

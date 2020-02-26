@@ -186,6 +186,8 @@ usage(void) {
 	perr("    -t (<n>|@)       delay before exiting full screen mode *");
 	perr("    -v <level>       set log level");
 	perr("    -w               use alternate function keys *");
+	perr("    -y (n|<n>,<ns>)  add <ns> nanoseconds delay every <n> "
+	    "instructions");
 	perr("    -z {a|e|i|n|s|x} set dump options");
 	perr("options with an asterisk (*) apply only to full screen mode");
 }
@@ -201,9 +203,9 @@ only_once(int c) {
 
 
 /*
- * parse a screen dimension from the command line (quite similar to
- * parse_dim() above); dimensions have to be decimal numbers in the
- * range min..max or the @ sign for the current screen size
+ * parse a screen dimension from the command line; dimensions have to be
+ * decimal numbers in the range min..max or the @ sign for the current
+ * screen size
  */
 static int
 parse_size(int c, int min, int max, const char *arg, int *size_p) {
@@ -227,6 +229,43 @@ parse_size(int c, int min, int max, const char *arg, int *size_p) {
 
 
 /*
+ * parse the CPU delay option parameter; this is either "n" for no
+ * delay or two decimal integers separated by a comma
+ */
+static int
+parse_delay(const char *arg, int *count_p, int *nanoseconds_p) {
+	int rc = 0;
+	unsigned long ul;
+	char *cp;
+	if (! strcmp(arg, "n")) {
+		*count_p = *nanoseconds_p = 0;
+	} else {
+		ul = strtoul(optarg, &cp, 10);
+		if (ul < 1 || ul > INT_MAX) {
+			perr("invalid count in -y option argument");
+			rc = (-1);
+		} else {
+			*count_p = (int) ul;
+			if (*cp != ',') {
+				perr("comma expected in -y option argument");
+				rc = (-1);
+			} else {
+				ul = strtoul(cp + 1, &cp, 10);
+				if (ul < 1 || ul > INT_MAX) {
+					perr("invalid nanosecond value in -y "
+					    "option argument");
+					rc = (-1);
+				} else {
+					*nanoseconds_p = (int) ul;
+				}
+			}
+		}
+	}
+	return rc;
+}
+
+
+/*
  * get the configuration
  *
  * After parsing the command line, further configuration values are
@@ -240,7 +279,7 @@ get_config(int argc, char **argv) {
 	size_t l;
 	unsigned long ul;
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:z:")) != EOF) {
+	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:y:z:")) != EOF) {
 		switch (opt) {
 		case 'a':
 			/*
@@ -385,6 +424,27 @@ get_config(int argc, char **argv) {
 				}
 			}
 			break;
+		case 'y':
+			/*
+			 * set CPU delay
+			 *
+			 * The parameter of the -y option takes the form
+			 * of two comma separated integers; the first one
+			 * is the number of instructions after which
+			 * the delay is added, and the second one is the
+			 * delay in nanoseconds.
+			 *
+			 * Alternatively, a parameter "n" overrides any
+			 * CPU delay specified in the configuration file.
+			 */
+			if (delay_count != (-1)) {
+				only_once('y');
+				rc = (-1);
+			} else {
+				rc = parse_delay(optarg, &delay_count,
+				    &delay_nanoseconds);
+			}
+			break;
 		case 'z':
 			/*
 			 * set dump configuration
@@ -395,7 +455,7 @@ get_config(int argc, char **argv) {
 			 * post mortem dump only.
 			 */
 			if (conf_dump) {
-				only_once('d');
+				only_once('z');
 				rc = (-1);
 			} else {
 				/*

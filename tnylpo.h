@@ -124,7 +124,7 @@ extern int cpu_exit(void);
 /*
  * OS emulation functions (in fact, OS emulation is part of the CPU
  * emulation, but separated to keep the source file size managable)
- */ 
+ */
 extern int os_init(void);
 extern void os_call(int magic);
 extern int os_exit(void);
@@ -158,6 +158,8 @@ extern char *conf_log;
 extern int default_drive;
 extern int dont_close;
 extern int reverse_bs_del;
+extern int delay_count;
+extern int delay_nanoseconds;
 
 
 /*

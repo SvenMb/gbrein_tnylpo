@@ -104,7 +104,7 @@ to_cpm(wchar_t c) {
 
 
 /*
- * convert a CP/M character to a Unix character 
+ * convert a CP/M character to a Unix character
  * returns (wint_t) (-1) if the character cannot be translated and there
  * is no representation for unprintable characters defined, and the
  * Unix wchar otherwise

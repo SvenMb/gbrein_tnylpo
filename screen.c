@@ -954,7 +954,7 @@ crt_poll(void) {
 	try_read();
 }
 
-	
+
 /*
  * return 1 if a character can be read from the emulated terminal,
  * otherwise return 0

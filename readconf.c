@@ -113,7 +113,7 @@ char *conf_log = NULL;
 /*
  * log level
  */
-enum log_level log_level = LL_UNSET; 
+enum log_level log_level = LL_UNSET;
 /*
  * CP/M default drive (0...15 corresponding to A...P)
  */
@@ -128,6 +128,13 @@ int dont_close = (-1);
  * dump configuration: default is no dump
  */
 enum dump conf_dump = 0;
+/*
+ * emulation delay: insert a pause of delay_nanoseconds every
+ * delay_count instructions (default: no delay)
+ */
+int delay_count = (-1);
+int delay_nanoseconds = (-1);
+
 
 /*
  * maximal length of a line in the configuration file
@@ -448,7 +455,7 @@ static const wchar_t *default_charset[256][4] = {
 	{ NULL, NULL, L"ü", L"ü" },
 	{ NULL, NULL, L"ý", L"ý" },
 	{ NULL, NULL, L"þ", L"þ" },
-	{ NULL, NULL, L"ÿ", L"ÿ" } 
+	{ NULL, NULL, L"ÿ", L"ÿ" }
 #else
 /*00*/	{ NULL, NULL, NULL, L"▄" },
 	{ L"█", NULL, NULL, L"█" },
@@ -705,7 +712,7 @@ static const wchar_t *default_charset[256][4] = {
 	{ NULL, NULL, L"ü", L"ü" },
 	{ NULL, NULL, L"ý", L"ý" },
 	{ NULL, NULL, L"þ", L"þ" },
-	{ NULL, NULL, L"ÿ", L"ÿ" } 
+	{ NULL, NULL, L"ÿ", L"ÿ" }
 #endif
 };
 
@@ -783,7 +790,7 @@ get_token(void) {
 				token_ul = wcstoul(curr_p, &tp, 8);
 			}
 		} else {
-			token_ul = wcstoul(curr_p, &tp, 10);	
+			token_ul = wcstoul(curr_p, &tp, 10);
 		}
 		/*
 		 * check for numeric overflow
@@ -952,13 +959,13 @@ parse_dim(const char *s, int min, int max, int *lines_p) {
 	get_token();
 	if (! check_equal(&rc)) goto premature_exit;
 	get_token();
-	if (token == 'i' && ! wcscmp(token_ident, L"current")) { 
+	if (token == 'i' && ! wcscmp(token_ident, L"current")) {
 		*lines_p = (-1);
 	} else {
 		if (! check_number(&rc)) goto premature_exit;
 		if (token_ul < min || token_ul > max) {
 			perr("%s(%d): %s number out of range (%d..%d)",
-			    cfn, ln, s, min, max); 
+			    cfn, ln, s, min, max);
 			rc = (-1);
 			goto premature_exit;
 		}
@@ -985,7 +992,7 @@ parse_boolean(int *value_p) {
 	} else if (token == 'i' && ! wcscmp(token_ident, L"false")) {
 		*value_p = 0;
 	} else {
-		perr("%s(%d): boolean value expected", cfn, ln); 
+		perr("%s(%d): boolean value expected", cfn, ln);
 		rc = (-1);
 		goto premature_exit;
 	}
@@ -1148,7 +1155,8 @@ parse_config(void) {
 	int rc = 0, alt, n, drive_no, temp_altkeys = (-1),
 	    temp_dont_close = (-1), temp_interactive = (-1),
 	    temp_screen_delay = (-1), temp_default_drive = (-1),
-	    temp_reverse_bs_del = (-1);
+	    temp_reverse_bs_del = (-1), temp_delay_count = (-1),
+	    temp_delay_nanoseconds = (-1);
 	enum dump temp_dump = 0;
 	wchar_t line[L_LINE];
 	size_t l;
@@ -1237,7 +1245,7 @@ parse_config(void) {
 		} else if (! wcscmp(token_ident, L"char")) {
 			/*
 			 * char resp. alt char: explicitly define
-			 * a CP/M character 
+			 * a CP/M character
 			 */
 			get_token();
 			if (token != '0' || token_ul > 256) {
@@ -1266,9 +1274,53 @@ parse_config(void) {
 			/*
 			 * all other keywords may not be prefixed by alt
 			 */
-			perr("%s(%d): keyword alt unexpected", cfn, ln); 
+			perr("%s(%d): keyword alt unexpected", cfn, ln);
 			rc = (-1);
 			continue;
+		} else if (! wcscmp(token_ident, L"cpu")) {
+			/*
+			 * specify CPU delay: an instruction count
+			 * and a number of nanoseconds, separated by a
+			 * comma
+			 */
+			get_token();
+			if (token != 'i' || wcscmp(token_ident, L"delay")) {
+				pexpected("delay");
+				rc = (-1);
+				continue;
+			}
+			if (temp_delay_count != (-1)) {
+				predefined("cpu delay");
+				rc = (-1);
+				continue;
+			}
+			get_token();
+			if (! check_equal(&rc)) continue;
+			get_token();
+			if (! check_number(&rc)) continue;
+			if (token_ul < 1 || token_ul > INT_MAX) {
+				perr("%s(%d): cpu delay count out of range",
+				    cfn, ln);
+				rc = (-1);
+				continue;
+			}
+			temp_delay_count = (int) token_ul;
+			get_token();
+			if (token != ',') {
+				pexpected(",");
+				rc = (-1);
+				continue;
+			}
+			get_token();
+			if (! check_number(&rc)) continue;
+			if (token_ul < 1 || token_ul > INT_MAX) {
+				perr("%s(%d): cpu delay nanoseconds out "
+				    "of range", cfn, ln);
+				rc = (-1);
+				continue;
+			}
+			temp_delay_nanoseconds = (int) token_ul;
+			get_token();
 		} else if (! wcscmp(token_ident, L"console")) {
 			/*
 			 * use emulated terminal (full) or line
@@ -1354,15 +1406,15 @@ parse_config(void) {
 				continue;
 			}
 			get_token();
+			if (! check_equal(&rc)) continue;
+			get_token();
 			if (token == 'i' && ! wcscmp(token_ident, L"key")) {
 				temp_screen_delay = (-2);
 			} else {
-				if (! check_equal(&rc)) continue;
-				get_token();
 				if (! check_number(&rc)) continue;
 				if (token_ul > INT_MAX) {
 					perr("%s(%d): screen delay out of "
-					    "range", cfn, ln); 
+					    "range", cfn, ln);
 					rc = (-1);
 					continue;
 				}
@@ -1517,7 +1569,7 @@ parse_config(void) {
 			if (! check_number(&rc)) continue;
 			if (token_ul >= LL_INVALID) {
 				perr("%s(%d): log level out of range",
-				    cfn, ln); 
+				    cfn, ln);
 				rc = (-1);
 				continue;
 			}
@@ -1580,7 +1632,7 @@ parse_config(void) {
 			}
 		}
 		if (token) {
-			perr("%s(%d): syntax error", cfn, ln); 
+			perr("%s(%d): syntax error", cfn, ln);
 			rc = (-1);
 		}
 	}
@@ -1593,7 +1645,7 @@ parse_config(void) {
 	 */
 	if (rc) goto premature_exit;
 	/*
-	 * take values from the configuration file only if 
+	 * take values from the configuration file only if
 	 * they have not already been defined on the command line
 	 */
 	if (log_level == LL_UNSET) log_level = temp_log_level;
@@ -1604,6 +1656,10 @@ parse_config(void) {
 	if (conf_interactive == (-1)) conf_interactive = temp_interactive;
 	if (default_drive == (-1)) default_drive = temp_default_drive;
 	if (conf_dump == 0) conf_dump = temp_dump;
+	if (delay_count == (-1)) {
+		delay_count = temp_delay_count;
+		delay_nanoseconds = temp_delay_nanoseconds;
+	}
 	/*
 	 * characters and character sets cannot be specified on
 	 * the command line
