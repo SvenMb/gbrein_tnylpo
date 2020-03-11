@@ -4,7 +4,8 @@
 version 2.2 under Unixy operating systems. It has been tested
 under Linux (Debian 8 i386; Debian 9 amd64; Debian 10 amd64, i386;
 Ubuntu 18.04.1 LTS amd64; CentOS 7),
-FreeBSD (12.0 amd64), NetBSD (8.0 i386, sparc, vax), OpenBSD (6.4 i386),
+FreeBSD (12.0 amd64), NetBSD (9.0 amd64; 8.0 i386, sparc, vax),
+OpenBSD (6.4 i386),
 Solaris (10 x86, 32 and 64 bit; 9 sparc, 32 bit; 9 x86; 7 sparc, 32 bit),
 and Mac OS X (10.5 ppc, 10.6, 10.9, 10.11, 10.13),
 but should need little to no modifications to run under any other
