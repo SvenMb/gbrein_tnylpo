@@ -37,6 +37,7 @@
 #include <ctype.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <time.h>
 #include <limits.h>
 
 #include <sys/types.h>
@@ -108,6 +109,12 @@ static int current_dma = DEFAULT_DMA;
 static const unsigned char serial_number[6] = {
 	0x00, 0x16, 0x00, 0xc0, 0xff, 0xee
 };
+
+
+/*
+ * extended BDOS functions: program return code
+ */
+static int program_return_code = 0;
 
 
 /*
@@ -3047,12 +3054,192 @@ bdos_write_random_with_zero_fill(void) {
 }
 
 
-#define BDOS_COUNT 41
+/*
+ * Extended BDOS functions: these are not present in CP/M 2.2, but are
+ * supported in other versions of CP/M or MP/M; currently, there is no
+ * intention to implement full support for any interface apart from the
+ * CP/M 2.2 API, and even those extended functions which are implemented
+ * may not support all possible options of their originals.
+ *
+ * Extended BDOS functions are meant to support things like getting the
+ * current time from the host operating system or passing an exit
+ * status to the environment without inventing new, totally incompatible
+ * interfaces resp. to support existing application programs which make
+ * moderate use of some CP/M 3 features.
+ * 
+ * The addition of extended BDOS functions was inspired by Joerg Pleumann,
+ * who also provided me with a prototype of the first implemented extended
+ * BDOS function, #105 "Get Date and Time".
+ */
+
+
+/*
+ * date components in CP/M 3 (always local time)
+ */
+struct cpm_time {
+	int day; /* 1..65535, day 1 is 1978-01-01 */
+	int hour;
+	int minute;
+	int second;
+};
+
+
+/*
+ * convert a Unix date (seconds since 1970-01-01 UTC) to
+ * a CP/M date (day number 1 = 1978-01-01, hours, minutes, and seconds,
+ * all in local time); an out-of-range date will be signalled by day number 0
+ */
+static void
+unix_to_cpm_time(const time_t *tp, struct cpm_time *ct_p) {
+	struct tm *tm_p, tm;
+	time_t t_first, t_this;
+	/*
+	 * get corresponding local time stamp
+	 */
+	tm_p = localtime(tp);
+	/*
+	 * save hour, minute, and second fields
+	 */
+	ct_p->hour = tm_p->tm_hour;
+	ct_p->minute = tm_p->tm_min;
+	ct_p->second = tm_p->tm_sec;
+	/*
+	 * check for date below the CP/M range: CP/M day 1 is 1978-01-01
+	 */
+	if (tm_p->tm_year < 78) {
+		ct_p->day = 0;
+	} else {
+		/*
+		 * the calculation of the day number is quite convoluted;
+		 * it is meant to take case of DST and leap seconds...
+		 */
+		/*
+		 * calculate seconds of first day of current year, 00:00:00
+		 * local time
+		 */
+		memset(&tm, 0, sizeof tm);
+		tm.tm_year = tm_p->tm_year;
+		tm.tm_mon = 0;
+		tm.tm_mday = 1;
+		tm.tm_hour = 0;
+		tm.tm_min = 0;
+		tm.tm_sec = 0;
+		t_this = mktime(&tm);
+		/*
+		 * calculate seconds of 1978-01-01, 00:00:00 local time
+		 */
+		memset(&tm, 0, sizeof tm);
+		tm.tm_year = 78;
+		tm.tm_mon = 0;
+		tm.tm_mday = 1;
+		tm.tm_hour = 0;
+		tm.tm_min = 0;
+		tm.tm_sec = 0;
+		t_first = mktime(&tm);
+		/*
+		 * calculate day number
+		 */
+		ct_p->day = (int) ((t_this - t_first + (12 * 60 * 60)) /
+		    (24 * 60 * 60) + tm_p->tm_yday + 1);
+		/*
+		 * check for date above the CP/M rage: day 65535 is 2157-07-05
+		 */
+		if (ct_p->day > 65535) ct_p->day = 0;
+	}
+}
+
+
+/*
+ * convert a number in the range 0..99 into a BCD encoded byte
+ */
+static unsigned char
+bcd_byte(int b) {
+	return (((b % 100) / 10) << 4) | (b % 10);
+}
+
+
+/*
+ * copies a CP/M timestamp into CP/M memory at the given address
+ */
+static void
+store_cpm_time(const struct cpm_time *ct_p, int addr) {
+	memory[addr] = (ct_p->day & 0xff);
+	memory[addr + 1] = ((ct_p->day >> 8) & 0xff);
+	memory[addr + 2] = bcd_byte(ct_p->hour);
+	memory[addr + 3] = bcd_byte(ct_p->minute);
+}
+
+
+/*
+ * return the current date and time
+ */
+static void
+bdosx_get_date_and_time(void) {
+	static const char func[] = "get date and time";
+	time_t t;
+	struct cpm_time ct;
+	int addr;
+	reg_a = 0;
+	SYS_ENTRY(func, REGS_DE);
+	/*
+	 * get and check buffer address
+	 */
+	addr = get_de();
+	if (MEMORY_SIZE - addr < 4) {
+		plog("get date and time: invalid buffer 0x%04x", addr);
+		terminate = 1;
+		term_reason = ERR_BDOSARG;
+		goto premature_exit;
+	}
+	/*
+	 * get current Unix time
+	 */
+	time(&t);
+	/*
+	 * convert it to the CP/M format
+	 */
+	unix_to_cpm_time(&t, &ct);
+	/*
+	 * copy time to user buffer; set a to the seconds value
+	 */
+	store_cpm_time(&ct, addr);
+	reg_a = bcd_byte(ct.second);
+premature_exit:
+	reg_l = reg_a;
+	reg_h = reg_b = 0;
+	SYS_EXIT(func, REGS_A);
+}
+
+
+/*
+ * query or set the program return code; since program chaining is not
+ * supported by tnylpo, the initial program return code value is always 0.
+ * If the program return code is in the range above 0xff00 on program exit,
+ * an unsuccessful program run will be signalled to the Unix environment.
+ */
+static void
+bdosx_get_set_program_return_code(void) {
+	static const char func[] = "get/set program return code";
+	int code;
+	SYS_ENTRY(func, REGS_DE);
+	code = get_de();
+	if (code == 0xffff) {
+		reg_l = (program_return_code & 0xff);
+		reg_h = ((program_return_code >> 8) & 0xff);
+	} else {
+		program_return_code = code;
+		reg_h = reg_l = 0;
+	}
+	reg_a = reg_l;
+	reg_b = reg_h;
+	SYS_EXIT(func, REGS_HL);
+}
+
 
 /*
  * function dispatcher table for the BDOS functions
  */
-static void (*bdos_functions_p[BDOS_COUNT])(void) = {
+static void (*bdos_functions_p[])(void) = {
 /*0*/	bdos_system_reset,
 /*1*/	bdos_console_input,
 /*2*/	bdos_console_output,
@@ -3093,8 +3280,78 @@ static void (*bdos_functions_p[BDOS_COUNT])(void) = {
 /*37*/	bdos_reset_drive,
 /*38*/	bdos_unsupported,
 /*39*/	bdos_unsupported,
-/*40*/	bdos_write_random_with_zero_fill
+/*40*/	bdos_write_random_with_zero_fill,
+/*41*/	bdos_unsupported,
+/*42*/	bdos_unsupported,
+/*43*/	bdos_unsupported,
+/*44*/	bdos_unsupported,
+/*45*/	bdos_unsupported,
+/*46*/	bdos_unsupported,
+/*47*/	bdos_unsupported,
+/*48*/	bdos_unsupported,
+/*49*/	bdos_unsupported,
+/*50*/	bdos_unsupported,
+/*51*/	bdos_unsupported,
+/*52*/	bdos_unsupported,
+/*53*/	bdos_unsupported,
+/*54*/	bdos_unsupported,
+/*55*/	bdos_unsupported,
+/*56*/	bdos_unsupported,
+/*57*/	bdos_unsupported,
+/*58*/	bdos_unsupported,
+/*59*/	bdos_unsupported,
+/*60*/	bdos_unsupported,
+/*61*/	bdos_unsupported,
+/*62*/	bdos_unsupported,
+/*63*/	bdos_unsupported,
+/*64*/	bdos_unsupported,
+/*65*/	bdos_unsupported,
+/*66*/	bdos_unsupported,
+/*67*/	bdos_unsupported,
+/*68*/	bdos_unsupported,
+/*69*/	bdos_unsupported,
+/*70*/	bdos_unsupported,
+/*71*/	bdos_unsupported,
+/*72*/	bdos_unsupported,
+/*73*/	bdos_unsupported,
+/*74*/	bdos_unsupported,
+/*75*/	bdos_unsupported,
+/*76*/	bdos_unsupported,
+/*77*/	bdos_unsupported,
+/*78*/	bdos_unsupported,
+/*79*/	bdos_unsupported,
+/*80*/	bdos_unsupported,
+/*81*/	bdos_unsupported,
+/*82*/	bdos_unsupported,
+/*83*/	bdos_unsupported,
+/*84*/	bdos_unsupported,
+/*85*/	bdos_unsupported,
+/*86*/	bdos_unsupported,
+/*87*/	bdos_unsupported,
+/*88*/	bdos_unsupported,
+/*89*/	bdos_unsupported,
+/*90*/	bdos_unsupported,
+/*91*/	bdos_unsupported,
+/*92*/	bdos_unsupported,
+/*93*/	bdos_unsupported,
+/*94*/	bdos_unsupported,
+/*95*/	bdos_unsupported,
+/*96*/	bdos_unsupported,
+/*97*/	bdos_unsupported,
+/*98*/	bdos_unsupported,
+/*99*/	bdos_unsupported,
+/*100*/	bdos_unsupported,
+/*101*/	bdos_unsupported,
+/*102*/	bdos_unsupported,
+/*103*/	bdos_unsupported,
+/*104*/	bdos_unsupported,
+/*105*/	bdosx_get_date_and_time,
+/*106*/	bdos_unsupported,
+/*107*/	bdos_unsupported,
+/*108*/	bdosx_get_set_program_return_code
 };
+
+#define BDOS_COUNT (sizeof bdos_functions_p / sizeof bdos_functions_p[0])
 
 
 /*
@@ -3426,6 +3683,17 @@ int
 os_exit(void) {
 	int rc = 0;
 	struct file_data *fdp;
+	/*
+	 * return error if the application program set a program return
+	 * code in above 0xff00. The more detailed return code of CP/M
+	 * (0x0000..0xfeff: shades of success; 0xff00..0xfffe: shades
+	 * of failure) is simplified to just success or failure.
+	 */
+	if (program_return_code) {
+		plog("CP/M program return code is 0x%04x",
+		    (unsigned) program_return_code);
+	}
+	if (program_return_code >= 0xff00) rc = (-1);
 	/*
 	 * reset disk subsystem
 	 */
