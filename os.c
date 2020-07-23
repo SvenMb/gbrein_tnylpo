@@ -3237,6 +3237,81 @@ bdosx_get_set_program_return_code(void) {
 
 
 /*
+ * pause program execution for a number of milliseconds; calls
+ * console_poll() at least four times a second to keep the
+ * full screen console emulation happy.
+ */
+static void
+pause_execution(int delay) {
+	struct timeval end, t;
+	/*
+	 * calculate absolute end time
+	 */
+	gettimeofday(&end, NULL);
+	end.tv_sec += delay / 1000;
+	end.tv_usec += (delay % 1000) * 1000;
+	if (end.tv_usec >= 1000000L) {
+		end.tv_sec++;
+		end.tv_usec -= 1000000L;
+	}
+	for (;;) {
+		/*
+		 * calculate the difference between the current time
+		 * and the end time
+		 */
+		gettimeofday(&t, NULL);
+		t.tv_usec = end.tv_usec - t.tv_usec;
+		t.tv_sec = end.tv_sec - t.tv_sec;
+		if (t.tv_usec < 0) {
+			t.tv_usec += 1000000L;
+			t.tv_sec--;
+		}
+		/*
+		 * if the difference is not positive, stop
+		 */
+		if (t.tv_sec < 0 || (t.tv_sec == 0 && t.tv_usec == 0)) break;
+		/*
+		 * calculate the minimum between the remaining time and
+		 * the quarter of a second
+		 */
+		if (t.tv_sec > 0 || t.tv_usec > 250000L) {
+			t.tv_sec = 0;
+			t.tv_usec = 250000L;
+		}
+		/*
+		 * wait this long
+		 */
+		select(0, NULL, NULL, NULL, &t);
+		/*
+		 * poll the console to keep window resizing etc. happy
+		 */
+		console_poll();
+	}
+}
+
+
+/*
+ * delay program execution for the number of "ticks" passed in register DE;
+ * unfortunately, the duration of "ticks" is system dependent, and the
+ * system clock usually ticks at 50 or 60 Hz.
+ * 
+ * Well, I'm from Europe, and 50 Hz therefore is what I'm used to, so let's
+ * assume a tick duration of 20 ms for tnylpo...
+ */ 
+static void
+bdosx_delay(void) {
+	static const char func[] = "delay";
+	int delay;
+	SYS_ENTRY(func, REGS_DE);
+	delay = get_de();
+	pause_execution(delay * 20);
+	reg_a = reg_l = 0;
+	reg_b = reg_h = 0;
+	SYS_EXIT(func, REGS_A);
+}
+
+
+/*
  * function dispatcher table for the BDOS functions
  */
 static void (*bdos_functions_p[])(void) = {
@@ -3348,7 +3423,40 @@ static void (*bdos_functions_p[])(void) = {
 /*105*/	bdosx_get_date_and_time,
 /*106*/	bdos_unsupported,
 /*107*/	bdos_unsupported,
-/*108*/	bdosx_get_set_program_return_code
+/*108*/	bdosx_get_set_program_return_code,
+/*109*/	bdos_unsupported,
+/*110*/	bdos_unsupported,
+/*111*/	bdos_unsupported,
+/*112*/	bdos_unsupported,
+/*113*/	bdos_unsupported,
+/*114*/	bdos_unsupported,
+/*115*/	bdos_unsupported,	
+/*116*/	bdos_unsupported,
+/*117*/	bdos_unsupported,
+/*118*/	bdos_unsupported,	
+/*119*/	bdos_unsupported,
+/*120*/	bdos_unsupported,
+/*121*/	bdos_unsupported,
+/*122*/	bdos_unsupported,
+/*123*/	bdos_unsupported,
+/*124*/	bdos_unsupported,
+/*125*/	bdos_unsupported,	
+/*126*/	bdos_unsupported,
+/*127*/	bdos_unsupported,
+/*128*/	bdos_unsupported,	
+/*129*/	bdos_unsupported,
+/*130*/	bdos_unsupported,
+/*131*/	bdos_unsupported,
+/*132*/	bdos_unsupported,
+/*133*/	bdos_unsupported,
+/*134*/	bdos_unsupported,
+/*135*/	bdos_unsupported,	
+/*136*/	bdos_unsupported,
+/*137*/	bdos_unsupported,
+/*138*/	bdos_unsupported,	
+/*139*/	bdos_unsupported,
+/*140*/	bdos_unsupported,
+/*141*/	bdosx_delay
 };
 
 #define BDOS_COUNT (sizeof bdos_functions_p / sizeof bdos_functions_p[0])
@@ -3590,52 +3698,9 @@ static void
 magic_delay(void) {
 	static const char func[] = "tnylpo delay";
 	int delay;
-	struct timeval end, t;
 	SYS_ENTRY(func, REGS_BC);
 	delay = get_bc();
-	/*
-	 * calculate absolute end time
-	 */
-	gettimeofday(&end, NULL);
-	end.tv_sec += delay / 1000;
-	end.tv_usec += (delay % 1000) * 1000;
-	if (end.tv_usec >= 1000000L) {
-		end.tv_sec++;
-		end.tv_usec -= 1000000L;
-	}
-	for (;;) {
-		/*
-		 * calculate the difference between the current time
-		 * and the end time
-		 */
-		gettimeofday(&t, NULL);
-		t.tv_usec = end.tv_usec - t.tv_usec;
-		t.tv_sec = end.tv_sec - t.tv_sec;
-		if (t.tv_usec < 0) {
-			t.tv_usec += 1000000L;
-			t.tv_sec--;
-		}
-		/*
-		 * if the difference is not positive, stop
-		 */
-		if (t.tv_sec < 0 || (t.tv_sec == 0 && t.tv_usec == 0)) break;
-		/*
-		 * calculate the minimum between the remaining time and
-		 * the quarter of a second
-		 */
-		if (t.tv_sec > 0 || t.tv_usec > 250000L) {
-			t.tv_sec = 0;
-			t.tv_usec = 250000L;
-		}
-		/*
-		 * wait this long
-		 */
-		select(0, NULL, NULL, NULL, &t);
-		/*
-		 * poll the console to keep window resizing etc. happy
-		 */
-		console_poll();
-	}
+	pause_execution(delay);
 	SYS_EXIT(func, 0);
 }
 
