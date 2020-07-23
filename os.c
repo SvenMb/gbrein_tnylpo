@@ -425,6 +425,14 @@ struct file_list {
 	 * size of file *in CP/M records of 128 bytes*
 	 */
 	off_t size;
+	/*
+	 * file access time
+	 */
+	time_t access;
+	/*
+	 * file modification time
+	 */
+	time_t modify;
 	struct file_list *next_p;
 	char *name;
 };
@@ -516,6 +524,8 @@ get_filelist(const char *directory, const char *name, const char *caller) {
 		tp = alloc(sizeof (struct file_list));
 		tp->next_p = flp;
 		tp->size = (s.st_size + 127) / 128;
+		tp->access = s.st_atime;
+		tp->modify = s.st_mtime;
 		tp->name = alloc(strlen(dep->d_name) + 1);
 		strcpy(tp->name, dep->d_name);
 		flp = tp;
@@ -1425,6 +1435,24 @@ bdos_reset_disk_system(void) {
 
 
 /*
+ * checks a drive number 0..15 if it is a valid and configured drive
+ * 0 corresponds to drive A, 15 to drive P, i.e. there is no
+ * default drive!
+ */
+static int
+check_drive(int drive, const char *caller) {
+	int rc = 0;
+	if (drive > 15 || ! conf_drives[drive]) {
+		plog("%s: illegal/unconfigured drive", caller);
+		terminate = 1;
+		term_reason = ERR_SELECT;
+		rc = (-1);
+	}
+	return rc;
+}
+
+
+/*
  * set current drive to the value in register E
  */
 static void
@@ -1432,13 +1460,9 @@ bdos_select_disk(void) {
 	static const char func[] = "select disk";
 	FDOS_ENTRY(func, REGS_E);
 	/*
-	 * drive number must be in the valid range (0...15)
+	 * drive number must be valid
 	 */
-	if (reg_e > 15) {
-		plog("select disk: illegal disk %d", (int) reg_e);
-		terminate = 1;
-		term_reason = ERR_SELECT;
-	} else {
+	if (! check_drive(reg_e, func)) { 
 		current_drive = reg_e;
 		memory[DRVUSER] = (reg_e | (current_user << 4));
 	}
@@ -3074,6 +3098,89 @@ bdos_write_random_with_zero_fill(void) {
 
 
 /*
+ * get a byte from the simulated SCB
+ */
+static unsigned char
+read_scb(int offset) {
+	switch (offset) {
+	case 0x05: /* BDOS Version number */
+		return 0x22;
+	case 0x10: /* program return code, low byte */
+		return (program_return_code & 0xff);
+	case 0x11: /* program return code, high byte */
+		return ((program_return_code >> 8) & 0xff);
+	case 0x1a: /* console columns - 1 */
+		return cols - 1;
+	case 0x1c: /* console lines */
+		return lines;
+	case 0x37: /* output delimiter */
+		return 0x24 /* $ */; 
+	case 0x3c: /* current DMA address, low byte */
+		return (current_dma & 0xff);
+	case 0x3d: /* current DMA address, high byte */
+		return ((current_dma >> 8) & 0xff);
+	case 0x3e: /* current disk, 0..15 */
+		return current_drive;
+	case 0x44: /* current user number, 0..15 */
+		return current_user;
+	case 0x4A: /* current multi sector count */
+		return 1;
+	default:
+		return 0x00;
+	}
+}
+
+
+/*
+ * get a word from the simulated SCB; tnylpo's simulated SCB is
+ * readonly, any attempts to write data to the SCB are silently ignored.
+ */
+static void
+bdosx_get_set_scb(void) {
+	static const char func[] = "get/set scb";
+	int addr, offset, action;
+	SYS_ENTRY(func, REGS_DE);
+	reg_l = reg_h = 0;
+	/*
+	 * get and check buffer address
+	 */
+	addr = get_de();
+	if (MEMORY_SIZE - addr < 2) {
+		plog("%s: invalid buffer 0x%04x", func, addr);
+		terminate = 1;
+		term_reason = ERR_BDOSARG;
+		goto premature_exit;
+	}
+	/*
+	 * get offset and action code
+	 */
+	offset = memory[addr];
+	action = memory[addr + 1];
+	/*
+	 * check function code
+	 */
+	switch (action) {
+	case 0x00:	/* read word */
+		reg_l = read_scb(offset);
+		reg_h = read_scb(offset + 1);
+		break;
+	case 0xfe:	/* set word */
+	case 0xff:	/* set byte */
+		break;
+	default:
+		plog("%s: invalid action code 0x%02x", func, action);
+		terminate = 1;
+		term_reason = ERR_BDOSARG;
+		goto premature_exit;
+	}		
+premature_exit:
+	reg_a = reg_l;
+	reg_b = reg_h;
+	SYS_EXIT(func, REGS_HL);
+}
+
+
+/*
  * date components in CP/M 3 (always local time)
  */
 struct cpm_time {
@@ -3150,7 +3257,7 @@ unix_to_cpm_time(const time_t *tp, struct cpm_time *ct_p) {
 
 
 /*
- * convert a number in the range 0..99 into a BCD encoded byte
+ * convert a number in the range 0..99 to a BCD encoded byte
  */
 static unsigned char
 bcd_byte(int b) {
@@ -3167,6 +3274,95 @@ store_cpm_time(const struct cpm_time *ct_p, int addr) {
 	memory[addr + 1] = ((ct_p->day >> 8) & 0xff);
 	memory[addr + 2] = bcd_byte(ct_p->hour);
 	memory[addr + 3] = bcd_byte(ct_p->minute);
+}
+
+
+/*
+ * return the directory label byte for a drive, which always indicates
+ * that file access and file update time stamps are enabled and
+ * passwords are disabled.
+ */
+static void
+bdosx_return_directory_label_data(void) {
+	static const char func[] = "return directory label data";
+	FDOS_ENTRY(func, REGS_E);
+	/*
+	 * drive number must be valid
+	 */
+	check_drive(reg_e, func);
+	reg_l = reg_a = 0x61; /* label present, access and update stamps */
+	reg_h = reg_b = 0;
+	FDOS_EXIT(func, REGS_A);
+}
+
+
+/*
+ * get file time stamps for the file described by the FCB pointed to by
+ * register DE
+ */
+static void
+bdosx_read_file_date_stamps_and_password_mode(void) {
+	int fcb, drive;
+	unsigned char temp_fcb[12];
+	char unix_name[L_UNIX_NAME];
+	struct file_list *flp = NULL;
+	struct cpm_time ct;
+	static const char func[] = "read file date stamps and password mode";
+	FDOS_ENTRY(func, REGS_DE);
+	/*
+	 * assume the operation fails
+	 */
+	reg_a = 0xff;
+	/*
+	 * get and check FCB address
+	 */
+	fcb = get_fcb(32, func);
+	if (fcb == (-1)) goto premature_exit;
+	/*
+	 * get and check drive
+	 */
+	drive = get_drive(fcb, func);
+	if (drive == (-1)) goto premature_exit;
+	/*
+	 * extract name from FCB and check it
+	 */
+	if (get_unix_name(fcb, unix_name, func) == (-1)) goto premature_exit;
+	/*
+	 * get a list of regular files matching the name in the FCB
+	 * (usually, this will be a one-element list)
+	 */
+	flp = get_filelist(conf_drives[drive], unix_name, func);
+	if (! flp) goto premature_exit;
+	/*
+	 * if the file name in the FCB was ambigous, update it
+	 */
+	if (is_ambigous(unix_name)) {
+		setup_fcb(flp->name, temp_fcb);
+		memcpy(memory + fcb + 1, temp_fcb + 1, 11);
+	}
+	/*
+	 * clear FCB byte 12 to indicate that the file has no password
+	 */
+	memory[fcb + 12] = 0;
+	/*
+	 * copy access and modify time stamps to the FCB
+	 */
+	unix_to_cpm_time(&flp->access, &ct);
+	store_cpm_time(&ct, fcb + 24);
+	unix_to_cpm_time(&flp->modify, &ct);
+	store_cpm_time(&ct, fcb + 28);
+	/*
+	 * success: always return directory code 0
+	 */
+	reg_a = 0x00;
+premature_exit:
+	/*
+	 * clean up
+	 */
+	free_filelist(flp);
+	reg_l = reg_a;
+	reg_h = reg_b = 0;
+	FDOS_EXIT(func, REGS_A);
 }
 
 
@@ -3200,7 +3396,7 @@ bdosx_get_date_and_time(void) {
 	 */
 	unix_to_cpm_time(&t, &ct);
 	/*
-	 * copy time to user buffer; set a to the seconds value
+	 * copy time to user buffer; set A to the second value
 	 */
 	store_cpm_time(&ct, addr);
 	reg_a = bcd_byte(ct.second);
@@ -3292,7 +3488,7 @@ pause_execution(int delay) {
 
 /*
  * delay program execution for the number of "ticks" passed in register DE;
- * unfortunately, the duration of "ticks" is system dependent, and the
+ * unfortunately, the duration of a "tick" is system dependent, but the
  * system clock usually ticks at 50 or 60 Hz.
  * 
  * Well, I'm from Europe, and 50 Hz therefore is what I'm used to, so let's
@@ -3364,7 +3560,7 @@ static void (*bdos_functions_p[])(void) = {
 /*46*/	bdos_unsupported,
 /*47*/	bdos_unsupported,
 /*48*/	bdos_unsupported,
-/*49*/	bdos_unsupported,
+/*49*/	bdosx_get_set_scb,
 /*50*/	bdos_unsupported,
 /*51*/	bdos_unsupported,
 /*52*/	bdos_unsupported,
@@ -3416,8 +3612,8 @@ static void (*bdos_functions_p[])(void) = {
 /*98*/	bdos_unsupported,
 /*99*/	bdos_unsupported,
 /*100*/	bdos_unsupported,
-/*101*/	bdos_unsupported,
-/*102*/	bdos_unsupported,
+/*101*/	bdosx_return_directory_label_data,
+/*102*/	bdosx_read_file_date_stamps_and_password_mode,
 /*103*/	bdos_unsupported,
 /*104*/	bdos_unsupported,
 /*105*/	bdosx_get_date_and_time,
