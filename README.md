@@ -48,7 +48,7 @@ In short, `tnylpo`
 * supports the full Z80 instruction set (including undocumented
 instructions and features)
 * supports (or at least tolerates) all BDOS calls of CP/M 2.2 and a few
-taken from CP/M 3 (mostly for date and time handling).
+taken from CP/M 3 (mostly for date and time handling)
 * supports all character handling BIOS calls of CP/M 2.2
 * provides a TPA size of 63.5KB
 * maps CP/M file operations to operations on files in the Unix file
