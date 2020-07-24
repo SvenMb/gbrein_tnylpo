@@ -630,7 +630,7 @@ instructions executed by the emulated CPU. The command line option
 .B -yn
 disables this delay, overriding a delay specified
 in the configuration file. Slowing the emulation allows using
-software (e.g. interactive games) which would otherwise run much to
+software (e.g. interactive games) which would otherwise run much too
 fast under tnylpo; another application is reducing the high load tnylpo
 puts on the host CPU.
 .PP
@@ -1261,10 +1261,10 @@ behaviour.
 .SS Program termination
 .PP
 tnylpo terminates as soon as the CP/M program it executes terminates
-by either calling BDOS function #0 (System Reset) or BIOS function 1
-(Warm Boot); jumping to address 0x0000 or using the stack area set up by
+by either calling BDOS function #0 (System Reset) or BIOS function WBOOT;
+jumping to address 0x0000 or using the stack area set up by
 tnylpo and ending execution by a RET instruction is equivalent to calling
-BIOS function 1 directly. Finally, the user may terminate a program
+BIOS function WBOOT directly. Finally, the user may terminate a program
 by pressing 
 .B ^C
 (0x03) when prompted for console input by BDOS function #10
@@ -1390,7 +1390,7 @@ file and expecting the CCP to execute its
 contents) will not work correctly. Ending a program by simply returning
 to the CCP is supported; tnylpo initializes a 8 level CCP stack at
 the end of the TPA (below the OS serial number) and pushes the address of the
-warm boot entry in the
+WBOOT entry in the
 BIOS vector, so a program trying to return to the CCP will terminate
 correctly.
 .SS File attributes
@@ -1416,7 +1416,8 @@ is stored at offsets 16 and 17 in the FCBs, and the same number XORed by
 the FCBs of open files and use the copies to further access the same files
 (e.g. programs written in Turbo Pascal do such things). The drive and file
 name portions of a FCB are only referenced by BDOS functions
-#15, #17, #19, #22, #23, #30, and #35, all other functions (especially the
+#15, #17, #19, #22, #23, #30, #35, and #102, all other functions
+(especially the
 read and write functions) use the file reference number to identify the
 relevant Unix file. The current record number in sequential I/O
 operations is stored in the FCB fields EX, S2, and RC (offsets
