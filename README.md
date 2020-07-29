@@ -64,6 +64,21 @@ eight bit characters, an alternate character set, insert/delete line
 commands, character attributes, and VT100 box drawing characters)
 * shields CP/M programs from terminal window resizing
 * allows to combine CP/M programs with Unix shell redirections and pipelines.
+## CP/M applications and compilers reported to work with `tnylpo`
+* Borland Turbo Pascal 3.01a
+* Microsoft Macro-80/Link-80 3.44
+* Microsoft Basic-85 5.29
+* Microsoft Fortran-80 3.44
+* MicroPro WordStar 3.30
+* Ashton-Tate dBase II 2.41
+* Digital Research PL/I-80 1.3
+* Digital Research RMAC 1.1, LINK 1.3, LIB 1.1, XREF 1.3
+* HI-TECH C 3.09
+* Borland Turbo Modula-2 1.00
+* Digital Research CP/M 2 utilities ASM, LOAD, PIP, DDT, and ED
+* Microsoft Cobol-80 4.65
+* Infocom Zork I, II, and III
+* Digital Research ZSID 1.4
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
