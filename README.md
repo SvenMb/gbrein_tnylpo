@@ -64,7 +64,12 @@ eight bit characters, an alternate character set, insert/delete line
 commands, character attributes, and VT100 box drawing characters)
 * shields CP/M programs from terminal window resizing
 * allows to combine CP/M programs with Unix shell redirections and pipelines.
-## CP/M applications and compilers reported to work with `tnylpo`
+## What CP/M applications work with `tnylpo`?
+All well-behaved CP/M 2.2 software (i.e. software conforming to the CP/M 2.2
+API and not using proprietary OS extensions, not accessing hardware directly,
+and refraining from BIOS based disk accesses) should function under `tnylpo`;
+the following applications, compilers, and utilities have been explicitly
+reported as working:
 * Borland Turbo Pascal 3.01a
 * Microsoft Macro-80/Link-80 3.44
 * Microsoft Basic-85 5.29
