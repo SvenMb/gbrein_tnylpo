@@ -34,9 +34,9 @@ a man page by issuing the man command." (from the Wikipedia, s.v.
 
 CP/M is a simple operating system for early microcomputers which was
 popular in the late 1970s and early 1980s. Its most important variant
-targeted computers based on Intel's 8080/8085 and Zilog's Z80 processors
-and was therefore called CP/M-80, while CP/M-86, CP/M-68K, and CP/M-8000
-targeted Intel's 8086, Motorola's 68000, and Zilog's Z8000 processors,
+targets computers based on Intel's 8080/8085 and Zilog's Z80 processors
+and is therefore called CP/M-80, while CP/M-86, CP/M-68K, and CP/M-8000
+target Intel's 8086, Motorola's 68000, and Zilog's Z8000 processors,
 respectively. (cf. Wikipedia, s.v. [CP/M](http://en.wikipedia.org/wiki/CP/M))
 ## What makes this program special?
 I'm not the right person to tell, since I didn't do much
