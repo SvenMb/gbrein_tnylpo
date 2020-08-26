@@ -22,6 +22,22 @@ nroff -man tnylpo.1 | less
 ## What is a man page? And what is CP/M-80?
 Move on, there is nothing to see for you. Go play with your
 smartphone, kiddy.
+
+O.K., that answer was elitist and ageist. Let's try again.
+
+"A man page (short for manual page) is a form of software documentation
+usually found on a Unix or Unix-like operating system. Topics covered
+include computer programs (including library and system calls), formal
+standards and conventions, and even abstract concepts. A user may invoke
+a man page by issuing the man command." (from the Wikipedia, s.v.
+[man page](http://en.wikipedia.org/wiki/Man_page), 2020-08-26)
+
+CP/M is a simple operating system for early microcomputers which was
+popular in the late 1970s and early 1980s. Its most important variant
+targeted computers based on Intel's 8080/8085 and Zilog's Z80 processors
+and was therefore called CP/M-80, while CP/M-86, CP/M-68K, and CP/M-8000
+targeted Intel's 8086, Motorola's 68000, and Zilog's Z8000 processors,
+respectively. (cf. Wikipedia, s.v. [CP/M](http://en.wikipedia.org/wiki/CP/M))
 ## What makes this program special?
 I'm not the right person to tell, since I didn't do much
 research into other CP/M emulators, so I cannot tell you what makes
