@@ -39,16 +39,16 @@ and is therefore called CP/M-80, while CP/M-86, CP/M-68K, and CP/M-8000
 target Intel's 8086, Motorola's 68000, and Zilog's Z8000 processors,
 respectively. (cf. Wikipedia, s.v. [CP/M](http://en.wikipedia.org/wiki/CP/M))
 ## What makes this program special?
-I'm not the right person to tell, since I didn't do much
-research into other CP/M emulators, so I cannot tell you what makes
-`tnylpo` stand out from the crowd (and there is quite a crowd of
+I didn't do much research into other CP/M emulators, so I cannot tell you
+what makes `tnylpo` stand out from the crowd (and there is quite a crowd of
 CP/M emulators, see e. g. the [emulators page on Thomas Scherrer's Z80
 pages](http://www.z80.info/z80emu.htm)).
 
-I wrote `tnylpo` for my own use, and I primarily wanted
-to run CP/M compilers and assemblers on more recent machines. Since this is my
-preferred working environment, I wanted my emulator to integrate CP/M
-software as tightly as possible into the Unix command line.
+I wrote `tnylpo` for my own use, and I primarily need to run CP/M compilers
+and assemblers on more recent machines. I designed my emulator to integrate
+CP/M software as tightly as possible into the Unix command line, since this
+is my preferred working environment.
+
 Consequently, if you are in search of the authentic look-and-feel of
 CP/M back in its heyday, `tnylpo` is probably not what you are
 looking for. If on the other hand you want to play with old CP/M source
