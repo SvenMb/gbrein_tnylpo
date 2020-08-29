@@ -100,6 +100,8 @@ reported as working:
 * Microsoft Cobol-80 4.65
 * Infocom Zork I, II, and III
 * Digital Research ZSID 1.4
+* Ellis Computing Nevada Cobol 2.1
+* Ellis Computing Nevada Fortran 3.0
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
