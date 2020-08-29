@@ -103,6 +103,7 @@ reported as working:
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
 * Ellis Computing Nevada Basic 2.2
+* Microsoft Multiplan 1.06
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
