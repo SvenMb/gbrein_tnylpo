@@ -102,6 +102,7 @@ reported as working:
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
+* Ellis Computing Nevada Basic 2.2
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
