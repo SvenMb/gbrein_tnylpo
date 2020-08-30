@@ -104,6 +104,7 @@ reported as working:
 * Ellis Computing Nevada Fortran 3.0
 * Ellis Computing Nevada Basic 2.2 *(1)*
 * Microsoft Multiplan 1.06 *(1)*
+* HiSoft Devpac80 v2 *(1, 2)*
 
 Notes:
 1. needs to be run/runs best with the `-s` (full screen console) option.
