@@ -106,8 +106,8 @@ reported as working:
 * Microsoft Multiplan 1.06 *(1)*
 
 Notes:
-1. needs to be run/runs best with the `-s` option.
-2. needs to be run with the `-n` option.
+1. needs to be run/runs best with the `-s` (full screen console) option.
+2. needs to be run with the `-n` (don't close files) option.
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
