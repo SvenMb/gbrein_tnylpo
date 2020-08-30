@@ -86,24 +86,28 @@ API and not using proprietary OS extensions, not accessing hardware directly,
 and refraining from BIOS based disk accesses) should function under `tnylpo`;
 the following applications, compilers, and utilities have been explicitly
 reported as working:
-* Borland Turbo Pascal 3.01a
+* Borland Turbo Pascal 3.01a ([^full])
 * Microsoft Macro-80/Link-80 3.44
 * Microsoft Basic-85 5.29
 * Microsoft Fortran-80 3.44
-* MicroPro WordStar 3.30
-* Ashton-Tate dBase II 2.41
+* MicroPro WordStar 3.30 ([^full])
+* Ashton-Tate dBase II 2.41 ([^close] [^full])
 * Digital Research PL/I-80 1.3
-* Digital Research RMAC 1.1, LINK 1.3, LIB 1.1, XREF 1.3
+* Digital Research MAC 2.0 ([^close]), RMAC 1.1, LINK 1.3, LIB 1.1, XREF 1.3
 * HI-TECH C 3.09
-* Borland Turbo Modula-2 1.00
+* Borland Turbo Modula-2 1.00 ([^full])
 * Digital Research CP/M 2 utilities ASM, LOAD, PIP, DDT, and ED
-* Microsoft Cobol-80 4.65
+* Microsoft Cobol-80 4.65 ([^full])
 * Infocom Zork I, II, and III
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
-* Ellis Computing Nevada Basic 2.2
-* Microsoft Multiplan 1.06
+* Ellis Computing Nevada Basic 2.2 ([^full])
+* Microsoft Multiplan 1.06 ([^full])
+
+[^full]: needs to be run/runs best with the `-s` option.
+
+[^close]: needs to be run with the `-n` option.
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
