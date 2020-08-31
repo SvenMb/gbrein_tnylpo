@@ -92,8 +92,8 @@ reported as working:
 * Microsoft Fortran-80 3.44
 * MicroPro WordStar 3.30 *(1)*
 * Ashton-Tate dBase II 2.41 *(1, 2)*
-* Digital Research PL/I-80 1.3
-* Digital Research MAC 2.0 *(2)*, RMAC 1.1, LINK 1.3, LIB 1.1, XREF 1.3
+* Digital Research PL/I-80 1.3 and 1.4
+* Digital Research MAC 2.0 *(2)*, RMAC 1.1, LINK 1.3 and 1.31, LIB 1.1, XREF 1.3
 * HI-TECH C 3.09
 * Borland Turbo Modula-2 1.00 *(1)*
 * Digital Research CP/M 2 utilities ASM, LOAD, PIP, DDT, and ED
