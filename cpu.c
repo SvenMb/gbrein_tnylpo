@@ -34,7 +34,6 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>
 #include <wchar.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -2892,6 +2891,109 @@ dump_plane(unsigned long counters[256], const char *name) {
 
 
 /*
+ * save (parts of) the Z80 memory as an Intel Hex file
+ */
+static int
+save_memory_hex(void) {
+	int rc = 0;
+	int addr, bytes, checksum, i;
+	FILE *fp = NULL;
+	/*
+	 * create text file
+	 */
+	fp = fopen(conf_save_file, "w");
+	if (! fp) {
+		perr("cannot create %s: %s", conf_save_file, strerror(errno));
+		rc = (-1);
+		goto premature_exit;
+	}
+	/*
+	 * save data in records of at most 32 bytes
+	 */
+	addr = conf_save_start;
+	while (addr <= conf_save_end) {
+		bytes = conf_save_end - addr + 1;
+		if (bytes > 32) bytes = 32;
+		checksum = bytes + ((addr >> 8) & 0xff) + (addr & 0xff);
+		fprintf(fp, ":%02X%04X00", bytes, addr);
+		for (i = 0; i < bytes; i++) {
+			fprintf(fp, "%02X", memory[addr + i]);
+			checksum += memory[addr + i];
+		}
+		checksum = ((0x100 - (checksum & 0xff)) & 0xff);
+		fprintf(fp, "%02X\n", checksum);
+		addr += bytes;
+	}
+	/*
+	 * write EOF record
+	 */
+	checksum = 0 + ((conf_save_start >> 8) & 0xff) +
+	    (conf_save_start & 0xff) + 1;
+	checksum = ((0x100 - (checksum & 0xff)) & 0xff);
+	fprintf(fp, ":00%04X01%02X\n", conf_save_start, checksum);
+	/*
+	 * summary error check
+	 */
+	if (ferror(fp)) {
+		perr("write error in %s: %s", conf_save_file, strerror(errno));
+		rc = (-1);
+	}
+premature_exit:
+	if (fp) {
+		/*
+		 * close text file
+		 */
+		if (fclose(fp)) {
+			perr("cannot close %s: %s", conf_save_file,
+			    strerror(errno));
+			rc = (-1);
+		}
+	}
+	return rc;
+}
+
+
+/*
+ * save (parts of) the Z80 memory as a binary file
+ */
+static int
+save_memory_bin(void) {
+	int rc = 0;
+	size_t n;
+	FILE *fp = NULL;
+	/*
+	 * create binary file
+	 */
+	fp = fopen(conf_save_file, "wb");
+	if (! fp) {
+		perr("cannot create %s: %s", conf_save_file, strerror(errno));
+		rc = (-1);
+		goto premature_exit;
+	}
+	/*
+	 * write memory contents
+	 */
+	n = conf_save_end - conf_save_start + 1;
+	if (fwrite(memory + conf_save_start, sizeof memory[0], n, fp) != n) {
+		perr("write error on %s: %s", conf_save_file, strerror(errno));
+		rc = (-1);
+	}
+premature_exit:
+	if (fp) {
+		/*
+		 * close binary file
+		 */
+		if (fclose(fp)) {
+			perr("cannot close %s: %s", conf_save_file,
+			    strerror(errno));
+			rc = (-1);
+		}
+	}
+	return rc;
+}
+
+
+/*
  * clean up after emulation run
  */
 int
@@ -2944,7 +3046,21 @@ cpu_exit(void) {
 		perr("program execution stopped by signal");
 		break;
 	}
-	if (term_reason > OK_CTRLC) rc = (-1);
+	if (term_reason <= OK_CTRLC) {
+		if (conf_save_file) {
+			/*
+			 * save (part of) the Z80 memory area
+			 * on regular program termination
+			 */
+			if (conf_save_hex) {
+				if (save_memory_hex()) rc = (-1);
+			} else {
+				if (save_memory_bin()) rc = (-1);
+			}
+		}
+	} else {
+		rc = (-1);
+	}
 	/*
 	 * deallocate memory
 	 */

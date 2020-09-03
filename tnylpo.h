@@ -128,7 +128,7 @@ extern int cpu_exit(void);
 extern int os_init(void);
 extern void os_call(int magic);
 extern int os_exit(void);
-
+extern int get_tpa_end(void);
 
 
 /*
@@ -174,6 +174,15 @@ enum dump {
 	DUMP_ALL = 0x20
 };
 extern enum dump conf_dump;
+
+
+/*
+ * save Z80 memory
+ */
+extern const char *conf_save_file;
+extern int conf_save_hex;
+extern int conf_save_start;
+extern int conf_save_end;
 
 
 /*

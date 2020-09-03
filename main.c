@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <locale.h>
+#include <ctype.h>
 #include <wchar.h>
 #include <errno.h>
 #include <limits.h>
@@ -178,7 +179,9 @@ usage(void) {
 	perr("    -b               use line mode console");
 	perr("    -c (<n>|@)       number of full screen mode columns *");
 	perr("    -d <drive>       set default drive");
-	perr("    -f <fn>          read configuration file");
+	perr("    -e [h][b<bytes>|p<pages>|r[<addr>]-<addr>]:<fn>");
+	perr("                     save memory to file <fn> after execution");
+	perr("    -f <fn>          read configuration from file <fn>");
 	perr("    -l (<n>|@)       number of full screen mode lines *");
 	perr("    -n               never actually close files");
 	perr("    -r               reverse backspace and delete keys *");
@@ -266,6 +269,204 @@ parse_delay(const char *arg, int *count_p, int *nanoseconds_p) {
 
 
 /*
+ * helper function for parse_save()
+ */
+static void
+range_err(void) {
+	perr("option -e: range may be specified only once");
+}
+
+
+/*
+ * parse an unsigned decimal integer
+ */
+static int
+parse_int(const char **cpp) {
+	int rc = (-1);
+	unsigned long ul;
+	char *rp;
+	if (isdigit(**cpp)) {
+		ul = strtoul(*cpp, &rp, 10);
+		*cpp = rp;
+		if (ul <= INT_MAX) rc = (int) ul;
+	}
+	return rc;
+}
+
+
+/*
+ * parse a Z80 address in decimal, hexadecimal, or octal
+ */
+static int
+parse_address(const char **cpp) {
+	int rc = (-1);
+	unsigned long ul;
+	const char *cp = *cpp;
+	char *rp;
+	if (*cp == '0') {
+		if (*(cp + 1) == 'x') {
+			cp += 2;
+			if (! isxdigit(*cp)) goto premature_exit;
+			ul = strtoul(cp, &rp, 16);
+		} else {
+			ul = strtoul(cp, &rp, 8);
+		}
+	} else {
+		if (! isdigit(*cp)) goto premature_exit;
+		ul = strtoul(cp, &rp, 10);
+	}
+	*cpp = rp;
+	if (ul >= MEMORY_SIZE) goto premature_exit;
+	rc = (int) ul;
+premature_exit:
+	return rc;
+}
+
+
+/*
+ * parse argument of the -e option
+ */
+static int
+parse_save(const char *arg) {
+	int rc = 0;
+	int range_set = 0, n;
+	const char *cp = arg;
+	while (*cp) {
+		switch (*cp) {
+		case 'h':
+			/*
+			 * save as Intel Hex file
+			 */
+			if (conf_save_hex) {
+				perr("option -e: suboption h may be "
+				    "specified only once");
+				rc = (-1);
+				goto premature_exit;
+			}
+			conf_save_hex = 1;
+			cp++;
+			break;
+		case 'r':
+			/*
+			 * save arbitrary range of bytes
+			 */
+			if (range_set) {
+				range_err();
+				rc = (-1);
+				goto premature_exit;
+			}
+			cp++;
+			range_set = 1;
+			/*
+			 * if the first address is missing, 0x100 is assumed
+			 */
+			if (*cp != '-') {
+				n = parse_address(&cp);
+				if (n == (-1)) {
+					perr("option -e: suboption r: "
+					    "invalid start address");
+					rc = (-1);
+					goto premature_exit;
+				}
+				conf_save_start = n;
+			} else {
+				conf_save_start = 0x100;
+			}
+			if (*cp != '-') {
+				perr("option -e: suboption r: range expected");
+				rc = (-1);
+				goto premature_exit;
+			}
+			cp++;
+			n = parse_address(&cp);
+			if (n == (-1) || n < conf_save_start) {
+				perr("option -e: suboption r: "
+				    "invalid end address");
+				rc = (-1);
+				goto premature_exit;
+			}
+			conf_save_end = n;
+			break;
+		case 'b':
+			/*
+			 * save number of bytes starting at 0x100
+			 */
+			if (range_set) {
+				range_err();
+				rc = (-1);
+				goto premature_exit;
+			}
+			cp++;
+			range_set = 1;
+			n = parse_int(&cp);
+			if (n < 1 || n > (MEMORY_SIZE - 0x100)) {
+				perr("option -e: suboption b: "
+				    "invalid byte count");
+				rc = (-1);
+				goto premature_exit;
+			}
+			conf_save_start = 0x100;
+			conf_save_end = 0x100 + n - 1;
+			break;
+		case 'p':
+			/*
+			 * save number of pages starting at 0x100
+			 */
+			if (range_set) {
+				range_err();
+				rc = (-1);
+				goto premature_exit;
+			}
+			cp++;
+			range_set = 1;
+			n = parse_int(&cp);
+			if (n < 1 || n > (MEMORY_SIZE / 256 - 1)) {
+				perr("option -e: suboption p: "
+				    "invalid page count");
+				rc = (-1);
+				goto premature_exit;
+			}
+			conf_save_start = 0x100;
+			conf_save_end = 0x100 + n * 256 - 1;
+			break;
+		case ':':
+			/*
+			 * rest of argument is file name
+			 */
+			cp++;
+			conf_save_file = cp;
+			cp += strlen(cp);
+			break;
+		default:
+			/*
+			 * illegal suboption
+			 */
+			perr("option -e: illegal suboption \'%c\'", *cp);
+			rc = (-1);
+			goto premature_exit;
+		}
+	}
+	/*
+	 * if no range has been specified, the whole TPA will be saved
+	 */
+	if (! range_set) {
+		conf_save_start = 0x100;
+		conf_save_end = get_tpa_end();
+	}
+	/*
+	 * a file name must be specified and it may not be empty
+	 */
+	if (! conf_save_file || ! *conf_save_file) {
+		perr("suboption -e: no file name specified");
+		rc = (-1);
+		goto premature_exit;
+	}
+premature_exit:
+	return rc;
+}
+
+
+/*
  * get the configuration
  *
  * After parsing the command line, further configuration values are
@@ -279,7 +480,7 @@ get_config(int argc, char **argv) {
 	size_t l;
 	unsigned long ul;
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "rbasc:l:f:d:v:wnt:y:z:")) != EOF) {
+	while ((opt = getopt(argc, argv, "abc:d:e:f:l:nrst:v:wy:z:")) != EOF) {
 		switch (opt) {
 		case 'a':
 			/*
@@ -441,8 +642,8 @@ get_config(int argc, char **argv) {
 				only_once('y');
 				rc = (-1);
 			} else {
-				rc = parse_delay(optarg, &delay_count,
-				    &delay_nanoseconds);
+				if (parse_delay(optarg, &delay_count,
+				    &delay_nanoseconds)) rc = (-1);
 			}
 			break;
 		case 'z':
@@ -507,6 +708,22 @@ get_config(int argc, char **argv) {
 					conf_dump |= DUMP_STARTUP |
 					    DUMP_EXIT | DUMP_SIGNAL;
 				}
+			}
+			break;
+		case 'e':
+			/*
+			 * save (part of) the Z80 memory after
+			 * program execution
+			 */
+			if (conf_save_file) {
+				only_once('e');
+				rc = (-1);
+			} else {
+				/*
+				 * the -e option argument is complex,
+				 * so it is parsed in a separate function
+				 */
+				if (parse_save(optarg)) rc = (-1);
 			}
 			break;
 		case '?':

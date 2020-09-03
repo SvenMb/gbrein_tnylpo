@@ -134,6 +134,13 @@ enum dump conf_dump = 0;
  */
 int delay_count = (-1);
 int delay_nanoseconds = (-1);
+/*
+ * save configuration: default is no saving done
+ */
+const char *conf_save_file = NULL;
+int conf_save_hex = 0;
+int conf_save_start = 0;
+int conf_save_end = 0;
 
 
 /*

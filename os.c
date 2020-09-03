@@ -34,7 +34,6 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <time.h>
@@ -136,6 +135,13 @@ get_hl(void) { int hl = reg_h; hl <<= 8; hl |= reg_l; return hl; }
  */
 static inline int
 get_bc(void) { int bc = reg_b; bc <<= 8; bc |= reg_c; return bc; }
+
+
+/*
+ * return the highest address of the TPA
+ */
+int
+get_tpa_end(void) { return BDOS_START - 1; }
 
 
 /*
