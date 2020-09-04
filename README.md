@@ -107,7 +107,7 @@ reported as working:
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
-* Ellis Computing Nevada Basic 2.2 *(1)*
+* Ellis Computing Nevada Basic 2.2 and 2.5 *(1)*
 * Microsoft Multiplan 1.06 *(1)*
 * HiSoft Devpac80 v2 *(1, 2)*
 * SLR Systems Z80ASM 1.32, SLRNK 1.31, Z80DIS 1.2
