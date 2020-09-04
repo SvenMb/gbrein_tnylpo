@@ -61,6 +61,18 @@ static int redirected = 0;
  * for CR/LF --- LF conversion while console is redirected
  */
 static int last_was_cr = 0;
+/*
+ * keeps track of newline in non-redirected line orientated console
+ * (serves to ensure that the shell prompt will appear on a new line
+ * after execution of the CP/M program)
+ */
+enum nl_state {
+	NL_CRLF, /* cursor on first position of a new line */
+	NL_LF, /* cursor on a new line, but not in the first position */
+	NL_CR, /* cursor in the first position, but not on a new line */
+	NL_OTHER /* cursor is in any other location of a non-empty line */
+};
+static enum nl_state nl_state = NL_CRLF;
 
 
 /*
@@ -201,7 +213,7 @@ console_out(unsigned char c) {
 	}
 	if (redirected) {
 		/*
-		 * change CR/LF to LF
+		 * redirected line mode console: change CR/LF to LF
 		 */
 		if (c != 0x0a /* LF */ && last_was_cr) putwchar(L'\r');
 		if (c != 0x0d /* CR */) {
@@ -215,8 +227,33 @@ console_out(unsigned char c) {
 		last_was_cr = (c == 0x0d /* CR */);
 	} else {
 		/*
-		 * output to the terminal (no emulation): convert to
-		 * Unix character set, ignore unconvertible characters
+		 * non-redirected line mode console: 
+		 * keep track of cursor position
+		 */
+		switch (c) {
+		case 0x0a /* LF */:
+			switch (nl_state) {
+			case NL_CRLF: break;
+			case NL_LF: break;
+			case NL_CR: nl_state = NL_CRLF; break;
+			case NL_OTHER: nl_state = NL_LF; break;
+			}
+			break;
+		case 0x0d /* CR */:
+			switch (nl_state) {
+			case NL_CRLF: break;
+			case NL_LF: nl_state = NL_CRLF; break;
+			case NL_CR: break;
+			case NL_OTHER: nl_state = NL_CR; break;
+			}
+			break;
+		default:
+			nl_state = NL_OTHER;
+			break;
+		}
+		/*
+		 * convert to Unix character set,
+		 * ignore unconvertible characters
 		 */
 		wc = from_cpm(c);
 		if (wc != (-1)) putwchar(wc);
@@ -366,6 +403,16 @@ console_exit(void) {
 	 */
 	if (last_was_cr) putwchar(L'\r');
 	restore_terminal();
+	/*
+	 * ensure shell prompt appears on the start of a new line (only
+	 * happens if the console is in non-redirected line mode)
+	 */
+	switch (nl_state) {
+	case NL_CRLF: break;
+	case NL_LF: putwchar(L'\r'); break;
+	case NL_CR: putwchar(L'\n'); break;
+	case NL_OTHER: putwchar(L'\r'); putwchar('\n'); break;
+	}
 premature_exit:
 	return 0;
 }
