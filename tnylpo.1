@@ -1128,19 +1128,19 @@ of CP/M memory addresses to save. Possible suboptions and their parameters
 are
 .TP
 .B h
-writes the memory contents in Intel Hex format; if this option is absent,
-a binary file will be written.
+causes the memory contents ito be written in Intel Hex format;
+if this option is absent, a binary file will be written.
 .TP
 .BI b <bytes>
-writes a number of bytes (specified as decimal number) starting from
+selects a number of bytes (specified as decimal number) starting from
 address 0x100.
 .TP
 .BI p <pages>
-writes a number of pages (units of 256 bytes specified as decimal number)
+selects a number of pages (units of 256 bytes, specified as decimal number)
 starting from address 0x100.
 .TP
 .BI r[ <low-addr> ]- <high-addr>
-writes the contents of the specified address range to the file (both addresses
+selects a range of addresses to save (both addresses
 may be specified as octal, hexadecimal, or decimal numbers using the
 Unix convention of prefixing them with
 .BR 0 ,
@@ -1153,7 +1153,7 @@ and if
 .I <low-addr> is missing, 0x100 will be assumed in its place.
 .TP
 .BI : <filename>
-specifiies the Unix file to which the memory contents are
+specifies the Unix file to which the memory contents are
 written; this is mandatory and must be the very last
 suboption (in fact, everything following the first colon in the argument
 of the
@@ -1166,7 +1166,7 @@ separated by whitespace. The three range specifications
 .BR p ", and"
 .B r
 may not exceed the range of the CP/M memory space (0x0000\(en0xffff) and are
-mutually exclusive; if none of them is specified, the whole of the TPA
+mutually exclusive; if none of them is specified, the whole TPA
 (starting at address 0x100 and including the last byte before the BDOS area)
 is saved.
 .PP
