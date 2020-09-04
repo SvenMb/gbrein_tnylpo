@@ -101,6 +101,7 @@ reported as working:
 * Infocom text adventures: *(1)*
   * Zork I, II, and III
   * Enchanter
+  * Leather Goddesses of Phobos *(3)*
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
@@ -113,6 +114,7 @@ reported as working:
 Notes:
 1. needs to be run with (resp. some features need) the `-s` (full screen console) option.
 2. needs to be run with the `-n` (don't close files) option.
+3. as I said, go play with your smartphone, kiddy!
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
 wide characters and its headers installed
