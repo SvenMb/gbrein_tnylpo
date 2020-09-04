@@ -108,7 +108,7 @@ reported as working:
 * SLR Systems Z80ASM 1.32, SLRNK 1.31, Z80DIS 1.2
 
 Notes:
-1. needs to be run/runs best with the `-s` (full screen console) option.
+1. needs to be run with (resp. some features need) the `-s` (full screen console) option.
 2. needs to be run with the `-n` (don't close files) option.
 ## How do I build it?
 Make sure you have a version of the `ncurses` library supporting
