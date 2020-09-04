@@ -98,7 +98,9 @@ reported as working:
 * Borland Turbo Modula-2 1.00 *(1)*
 * Digital Research CP/M 2 utilities ASM, LOAD, PIP, DDT, and ED
 * Microsoft Cobol-80 4.65 *(1)*
-* Infocom Zork I, II, and III
+* Infocom text adventures: *(1)*
+  * Zork I, II, and III
+  * Enchanter
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
