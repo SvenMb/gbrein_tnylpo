@@ -103,6 +103,7 @@ reported as working:
   * Enchanter
   * Leather Goddesses of Phobos *(3)*
   * Planetfall
+  * The Hitchhiker's Guide to the Galaxy
 * Digital Research ZSID 1.4
 * Ellis Computing Nevada Cobol 2.1
 * Ellis Computing Nevada Fortran 3.0
