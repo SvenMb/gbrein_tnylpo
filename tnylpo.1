@@ -120,13 +120,14 @@ code from the CP/M operating system nor needs any additional software
 apart from the actual applications it is meant to run.
 .PP
 Since CP/M-80 programs can use eight-bit characters at best (many of them
-even share CP/M's own firm belief in a seven-bit ASCII world), another
+even share the firm belief of CP/M in a seven-bit ASCII world), another
 translation
 layer mediates between the internal one-byte-per-character text representation
 and the almost universal multibyte character (most commonly UTF-8 based)
 approach of contemporary Unix
-systems. This translation layer affects CP/M's character orientated I/O
-channels only and may be disabled for the printer, punch, and reader devices.
+systems. This translation layer affects the character orientated I/O
+channels of CP/M only and may be disabled for the printer, punch, and reader
+devices.
 .PP
 All screen-orientated CP/M-80 programs are unable to cope with the ability of
 graphical user interfaces to resize text windows (in fact, even the ability of
@@ -196,7 +197,7 @@ since CP/M
 .I de facto 
 allows almost arbitrary seven-bit characters in its file names
 (including null bytes and slashes), and Unix file names are not bound
-to CP/M's 8+3 character restriction, tnylpo enforces a common subset:
+to the 8+3 character restriction of CP/M, tnylpo enforces a common subset:
 only decimal digits, the 26 letters of the alphabet, the minus
 .RB ( - ),
 at
@@ -223,10 +224,10 @@ usually remove them before exiting.)
 Many of tnylpo's command line options have corresponding entries in the
 configuration file, so they will be discussed in this context below (see
 .BR "Configuration options" ).
-Four options have no counterpart:
+Four options have no counterparts:
 .TP
 .B -a
-select the alternate character set from the configuration file
+selects the alternate character set from the configuration file
 before starting execution (see 
 .BR "Character sets" ).
 .TP
@@ -236,10 +237,10 @@ program termination (see
 .BR "Saving a memory image" ).
 .TP
 .BI -f " <config-file>"
-tell tnylpo to read its configuration from the named file.
+tells tnylpo to read its configuration from the named file.
 .TP
 .B -h
-asks tnylpo to show a short command line synopsis and exit
+asks tnylpo to show a short command line synopsis
 .RB ( -h
 cannot be used in combination with any other command line option).
 .SS Command line arguments
@@ -260,7 +261,7 @@ is appended if the file name does not already end in
 .BR .com .
 .PP
 All further positional arguments are passed as command line arguments to
-the CP/M program (i.e., they are converted to upper case and copied to
+the CP/M program (i.e. they are converted to upper case and copied to
 the default DMA area at 0x0080; additionally, the default
 FCB at 0x005c is initialized according to the second
 and third positional arguments).
@@ -350,7 +351,7 @@ command line option
 .I <drive letter>
 .RS
 .PP
-defines the drive identified by
+define the drive identified by
 .I <drive letter>
 (a single lower case letter in the range a\(enp) as default drive, i.e.
 the drive all file specifications not including an explicit drive name
@@ -448,7 +449,7 @@ or
 .B -b
 .RS
 .PP
-tells tnylpo to use the full screen VT52 emulation
+tell tnylpo to use the full screen VT52 emulation
 .RB ( full ,
 .BR -s )
 or the line orientated
@@ -472,7 +473,7 @@ command line option
 .BR @ )
 .RS
 .PP
-defines the number of seconds tnylpo should wait between program
+define the number of seconds tnylpo should wait between program
 termination and resetting the display. If
 .B key
 (resp.
@@ -734,7 +735,7 @@ resp. by the entry
 .B console = full
 in the configuration file.
 .PP
-This terminal emulation mimicks the VT52 fairly accurately, but offers a
+tnylpo's terminal emulation mimicks the VT52 fairly accurately, but offers a
 number of extensions, among them the ability to support screen sizes of
 up to 95 by 95 characters (this limitation is due to the limitations of the
 VT52 direct cursor positioning command), eight-bit operation, a dynamically
@@ -761,19 +762,19 @@ a character is displayed in the last column of a line) and supports
 gives an accustic (or visual) signal.
 .TP
 .B <bs> (0x08)
-moves the cursor left, stops at column 1.
+moves the cursor left, but stops at column 1.
 .TP
 .B <tab> (0x09)
 moves the cursor to the next tabulator stop if it is before the last
-tabulator stop (tabulator stops are at columns 9, 17, 25, ...); otherwise,
-moves the cursor one column to the right (does nothing if the cursor is
-already in the last column).
+tabulator stop on the current line (tabulator stops are at columns 9, 17,
+25, ...); otherwise, it moves the cursor one column to the right (resp.
+does nothing if the cursor is already in the last column).
 .TP
 .B <lf> (0x0a)
-moves cursor down one line, scrolls up on bottom line.
+moves the cursor down one line and scrolls up on bottom line.
 .TP
 .B <cr> (0x0d)
-moves cursor to the first column of the current line.
+moves the cursor to the first column of the current line.
 .TP
 .B <esc> (0x1b)
 marks the start of an escape sequence (see below).
@@ -782,101 +783,101 @@ All other characters in the ASCII control character range (0x00\(en0x1f, 0x7f)
 are ignored. The VT52 escape sequences are:
 .TP
 .BR "<esc> ) (0x1b 0x29)" " and " "<esc> = (0x1b 0x3d)"
-switches keypad to application resp. regular (numeric) mode (no effect in
+switch the keypad to application resp. to regular (numeric) mode (no effect in
 tnylpo).
 .TP
 .B <esc> A (0x1b 0x41)
-moves the cursor up one line, stops at the top line.
+moves the cursor up one line, but stops at the top line.
 .TP
 .B <esc> B (0x1b 0x42)
-moves the cursor down one line, stops at the bottom line.
+moves the cursor down one line, but stops at the bottom line.
 .TP
 .B <esc> C (0x1b 0x43)
-moves the cursor right one column, stops at the last column.
+moves the cursor right one column, but stops at the last column.
 .TP
 .B <esc> D (0x1b 0x44)
-moves the cursor left one column, stops at the first column.
+moves the cursor left one column, but stops at the first column.
 .TP
 .BR "<esc> F (0x1b 0x46)" " and " "<esc> G (0x1b 0x47)"
-displays character codes 0x5e\(en0x7e as graphical resp. as ASCII characters
+display character codes 0x5e\(en0x7e as graphical resp. as ASCII characters
 (see below).
 .TP
 .B <esc> H (0x1b 0x48)
-moves cursor to the left top corner of the display.
+moves the cursor to the left top corner of the display.
 .TP
 .B <esc> I (0x1b 0x49)
-moves cursor up one line, scrolls down at the first line.
+moves the cursor up one line and scrolls down at the first line.
 .TP
 .B <esc> J (0x1b 0x4a)
-clears display from the current cursor position to the end of the screen.
+clears the display from the current cursor position to the end of the screen.
 .TP
 .B <esc> K (0x1b 0x4b)
-clears display from the current cursor position to the end of the line.
+clears the display from the current cursor position to the end of the line.
 .TP
 .BI "<esc> Y" " <line> <column> " "(0x1b 0x59 0xll 0xcc)"
-moves cursor to the specified position of the display; line and column
+moves the cursor to the specified position on the display; line and column
 numbers are given as graphical characters in the range of 0x20 (position 1)
 to 0x7e (position 95). If the column number is larger than the display width,
 the horizontal position is not changed; a line number larger than the
-hight of the display moves the cursor to the last line.
+height of the display moves the cursor to the last line.
 .TP
 .B <esc> Z (0x1b 0x5a)
-identifies terminal type; the terminal emulation responds by sending the
+identifies the terminal type; the terminal emulation responds by sending the
 sequence
 .B <esc> / K
 (0x1b 0x2f 0x4b), i.e. it identifies itself as VT52 without
 hardcopy device.
 .TP
 .BR "<esc> [ (0x1b 0x5b)" " and " "<esc> \[rs] (0x1b 0x5c)"
-enters resp. exits "hold screen" mode (see below).
+enter resp. exit "hold screen" mode (see below).
 .PP
 In addition, the terminal emulation in tnylpo supports the following
 extensions to the VT52 escape sequences:
 .TP
 .B <esc> E (0x1b 0x45)
-clears the display, moves cursor to the top left corner of the display.
+clears the display, moves the cursor to the top left corner of the display.
 .TP
 .B <esc> L (0x1b 0x4c)
-inserts a blank line at the cursor position, moves lines below down one
+inserts a blank line at the cursor position and  moves lines below down one
 line (the last line is lost).
 .TP
 .B <esc> M (0x1b 0x4d)
-deletes the line at the cursor position, moves lines below up one line (an
+deletes the line at the cursor position and moves lines below up one line (an
 empty line will appear at the bottom of the display).
 .TP
 .B <esc> N (0x1b 0x4e)
-inserts a blank character at the cursor position, moves characters to the
+inserts a blank character at the cursor position and moves characters to the
 right one position to the right (the last character on the line is lost).
 .TP
 .B <esc> O (0x1b 0x4f)
-deletes character at the cursor position, moves characters to the right one
-position to the left (a blank character appears in the last column of the
-line).
+deletes the character at the cursor position and  moves characters to the
+right one position to the left (a blank character appears in the last column
+of the line).
 .TP
 .BR "<esc> a (0x1b 0x61)" " and " "<esc> b (0x1b 0x62)"
-makes cursor invisible resp. visible.
+make the cursor invisible resp. visible.
 .TP
 .BR "<esc> c (0x1b 0x63)" " and " "<esc> d (0x1b 0x64)"
-switch to alternate resp. primary character set (see below).
+switch to the alternate resp. to the primary character set (see below).
 .TP
 .BR "<esc> e (0x1b 0x65)" " and " "<esc> f (0x1b 0x66)"
-switches on resp. off bold characters.
+switch on resp. off bold characters.
 .TP
 .BR "<esc> g (0x1b 0x67)" " and " "<esc> h (0x1b 0x68)"
-switches on resp. off underlined characters.
+switch on resp. off underlined characters.
 .TP
 .BR "<esc> i (0x1b 0x69)" " and " "<esc> j (0x1b 0x6a)"
-switches on resp. off inverted characters.
+switch on resp. off inverted characters.
 .TP
 .BR "<esc> k (0x1b 0x6a)" " and " "<esc> l (0x1b 0x6c)"
-switches on (arrgh!) resp. off (phew!) blinking characters.
+switch on (arrgh!) resp. off (phew!) blinking characters.
 .TP
 .B <esc> m (0x1b 0x6d)
 switches off bold, underlined, blinking, and inverted characters as well
 as standout mode (see below).
 .TP
 .BR "<esc> n (0x1b 0x6e)" " and " "<esc> o (0x1b 0x6f)"
-switches cursor keys to application mode resp. back to regular (VT52) mode:
+switch the cursor keys to application mode resp. back to regular (VT52) mode:
 in regular mode, the cursor keys send the sequences
 .B <esc> A
 (up),
@@ -897,7 +898,7 @@ send WordStar-compatible commands, namely
 (0x13, left).
 .TP
 .BR "<esc> p (0x1b 0x70)" " and " "<esc> q (0x1b 0x71)"
-switches on resp. off standout mode; standout mode is the most visible
+switch on resp. off standout mode; standout mode is the most visible
 character attribute provided by
 .B curses
 (this is usually inverted video, so using
@@ -921,7 +922,7 @@ screen" mode is exited or the user presses the "scroll page" key
 one more screenfull resp. one more line of output.
 .PP
 Displaying graphical characters instead of ASCII characters for the
-byte range 0x5e\(en0x7f is another feature of the VT52 terminal which allows
+byte range 0x5e\(en0x7e is another feature of the VT52 terminal which allows
 access to certain additional shapes like subscripted digits or the
 \(+- sign; in tnylpo, graphical mode allows displaying the shapes defined
 for the character positions 0x00\(en0x1f and 0x7f, which cannot be displayed
@@ -937,7 +938,7 @@ resp.
 .BR "<esc> d" .
 Switching character sets doesn't
 change characters already written to the display. This feature allows
-programs to use a national variant of the ISO 646 seven-bit character
+programs to use e.g. a national variant of the ISO 646 seven-bit character
 set in parallel to standard ASCII characters.
 .PP
 Character set definition is done in the configuration file by using
@@ -1032,7 +1033,7 @@ return the sequences
 (0x1b 0x51), and
 .B <esc> R
 (0x1b 0x52). F4 causes the terminal emulation to redraw its display, which
-is useful if some other program or the host operating system messes up
+is useful if some other program or the host operating system mess up
 the user's screen. F10 sends a SIGINT to tnylpo, causing the emulation
 to stop abruptly, but allowing tnylpo itself to exit gracefully (this key
 is meant as a last-resort way of stopping a CP/M program gone haywire).
@@ -1045,8 +1046,8 @@ and
 and the input-only paper tape reader device
 .BR RDR: .
 tnylpo represents these devices by host system files, to which the
-data provided by the CP/M programs are written resp. from which the data
-presented to the CP/M programs are read.
+data provided by the CP/M program are written resp. from which the data
+presented to the CP/M program are read.
 .PP
 These files are defined by the configuration options
 .RS
@@ -1121,7 +1122,7 @@ in this mode.
 The command line option
 .B -e
 causes tnylpo to save parts of the CP/M memory to a file after a
-regular program termination (i.e., one that is not caused by a fatal error
+regular program termination (i.e. one that is not caused by a fatal error
 or receipt of a signal); it takes as argument a string of suboptions
 which specify the name and the format of the output file and the range
 of CP/M memory addresses to save. Possible suboptions and their parameters
@@ -1150,7 +1151,8 @@ or any other digit, respectively);
 may not be less than
 .IR <low-addr> ,
 and if
-.I <low-addr> is missing, 0x100 will be assumed in its place.
+.I <low-addr>
+is missing, 0x100 will be assumed in its place.
 .TP
 .BI : <filename>
 specifies the Unix file to which the memory contents are
