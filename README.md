@@ -112,7 +112,6 @@ reported as working:
 * HiSoft Devpac80 v2 *(1, 2)*
 * SLR Systems Z80ASM 1.32, SLRNK 1.31, Z80DIS 1.2
 * MicroPro WordMaster 1.07A *(1)*
-* HiSoft FTL Modula-2 1.30 *(1, 2)*
 
 Notes:
 1. needs to be run with (resp. some features need) the `-s` (full screen console) option.
