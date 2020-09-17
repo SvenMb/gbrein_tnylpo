@@ -460,6 +460,49 @@ free_filelist(struct file_list *flp) {
 
 
 /*
+ * helper function for get_filelist(): prepares a CP/M compatible
+ * Unix filename for matching by removing the dot between name and
+ * extension and padding name and extension with blanks
+ */
+static void
+prepare_name(const char *unix_name, char pattern[11]) {
+	const char *cp;
+	memset(pattern, ' ', 11);
+	cp = strchr(unix_name, '.');
+	/*
+	 * we already know that unix_name is CP/M compatible,
+	 * i.e. that the name resp. the extension is at most 8 resp. 3
+	 * characters long
+	 */
+	if (cp) {
+		memcpy(pattern, unix_name, cp - unix_name);
+		memcpy(pattern + 8, cp + 1, strlen(cp + 1));
+	} else {
+		memcpy(pattern, unix_name, strlen(unix_name));
+	}
+}
+
+
+/*
+ * helper function for get_filelist(): check two arrays prepared
+ * by prepare_name() for a match (pattern may contain question marks as
+ * wildcards
+ */
+static int
+match_name(const char name[11], const char pattern[11]) {
+	int rc = 1, i;
+	for (i = 0; i < 11; i++) {
+		if (pattern[i] == '?') continue;
+		if (pattern[i] != name[i]) {
+			rc = 0;
+			break;
+		}
+	}
+	return rc;
+}
+
+
+/*
  * gets a listing of all possible CP/M files in a directory which
  * match a given, possibly ambigous file name (the pattern is expected
  * in Unix format)
@@ -472,13 +515,18 @@ get_filelist(const char *directory, const char *name, const char *caller) {
 	int t;
 	struct stat s;
 	char *path = NULL;
-	const char *pp, *np;
+	char pattern[11];
+	char temp_name[11];
 	dp = opendir(directory);
 	if (! dp) {
 		plog("%s: opendir(%s) failed: %s", caller,
 		    directory, strerror(errno));
 		goto premature_exit;
 	}
+	/*
+	 * prepare pattern for matching
+	 */
+	prepare_name(name, pattern);
 	while ((dep = readdir(dp))) {
 		/*
 		 * skip CP/M incompatible names
@@ -487,20 +535,8 @@ get_filelist(const char *directory, const char *name, const char *caller) {
 		/*
 		 * skip names which do not match
 		 */
-		pp = name;
-		np = dep->d_name;
-		while (*pp) {
-			if (*pp == *np) {
-				pp++;
-				np++;
-			} else if (*pp == '?') {
-				pp++;
-				if (*np && *np != '.') np++;
-			} else {
-				break;
-			}
-		}
-		if (*pp || *np) continue;
+		prepare_name(dep->d_name, temp_name);
+		if (! match_name(temp_name, pattern)) continue;
 		/*
 		 * build path for file
 		 */
