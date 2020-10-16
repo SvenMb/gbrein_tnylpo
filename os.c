@@ -1347,6 +1347,9 @@ bdos_read_console_buffer(void) {
 				put_crlf();
 				terminate = 1;
 				term_reason = OK_CTRLC;
+				if (log_level >= LL_SYSCALL) {
+					plog("program terminated by ^C");
+				}
 				goto premature_exit;
 			}
 		}
@@ -1425,10 +1428,17 @@ bdos_read_console_buffer(void) {
 	 * emit a singe CR
 	 */
 	put_char(0x0d /* CR */);
+	/*
+	 * dump valid part of input buffer
+	 */
+	if (log_level >= LL_SYSCALL) {
+		plog("dump of input buffer(0x%04x):", addr);
+		plog_dump(addr, 2 + size - free);
+	}
 premature_exit:
 	reg_l = reg_a = 0;
 	reg_h = reg_b = 0;
-	SYS_ENTRY(func, 0);
+	SYS_EXIT(func, 0);
 }
 
 
