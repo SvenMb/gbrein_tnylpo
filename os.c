@@ -57,7 +57,7 @@
 #define ALV (MAGIC_ADDRESS - ALV_SIZE)
 #define DPB_SIZE 15
 #define DPB (ALV - DPB_SIZE)
-#define BIOS_VECTOR (DPB - BIOS_VECTOR_COUNT * 3)
+#define BIOS_VECTOR ((DPB - BIOS_VECTOR_COUNT * 3) & 0xff00)
 #define BIOS_START BIOS_VECTOR
 #define BIOS_SIZE (MEMORY_SIZE - BIOS_START)
 #define BDOS_SIZE 11
@@ -972,6 +972,7 @@ os_init(void) {
 	 * set up fake ALV (used for all drives)
 	 */
 	memcpy(memory + ALV, memory + DPB + 9, 2);
+	memset(memory + ALV + 2, 0, ALV_SIZE - 2); 
 	/*
 	 * set up zero page
 	 */
@@ -985,6 +986,10 @@ os_init(void) {
 	 * set up IOBYTE
 	 */
 	memory[IOBYTE] = 0x00;
+	/*
+	 * set up DRVUSER
+	 */
+	memory[DRVUSER] = (default_drive | (current_user << 4));
 	/*
 	 * set up BDOS entry point
 	 */
@@ -1033,6 +1038,7 @@ os_init(void) {
 	/*
 	 * set up the default FCBs at 0x005c and 0x006c
 	 */
+	memset(memory + DEFAULT_FCB_1, 0, 36);
 	setup_fcb(
 	    conf_argc > 0 ? conf_argv[0] : "",
 	    memory + DEFAULT_FCB_1);
@@ -1516,7 +1522,7 @@ bdos_select_disk(void) {
 	 */
 	if (! check_drive(reg_e, func)) { 
 		current_drive = reg_e;
-		memory[DRVUSER] = (reg_e | (current_user << 4));
+		memory[DRVUSER] = (current_drive | (current_user << 4));
 	}
 	reg_l = reg_a = 0;
 	reg_h = reg_b = 0;
@@ -2775,6 +2781,7 @@ bdos_set_get_user_code(void) {
 		reg_l = reg_a = current_user;
 	} else {
 		current_user = (reg_e & 0x0f);
+		memory[DRVUSER] = (current_drive | (current_user << 4));
 		reg_l = reg_a = 0;
 	}
 	reg_h = reg_b = 0;

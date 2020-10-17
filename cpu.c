@@ -218,10 +218,10 @@ cpu_init(void) {
 	int rc = 0;
 	struct timeval tv;
 	/*
-	 * allocate and clear Z80 memory
+	 * allocate Z80 memory and fill it with HALT instructions
 	 */
 	memory = alloc(MEMORY_SIZE);
-	memset(memory, 0, MEMORY_SIZE);
+	memset(memory, 0x76 /* HALT */, MEMORY_SIZE);
 	/*
 	 * set register R to some random value; programs (e. g. Turbo Pascal)
 	 * use R for generating random numbers
@@ -499,11 +499,13 @@ inst_ccf(void) {
 
 
 /*
- * halt CPU (dummy; just works as if an NMI had occurred)
+ * halt CPU: terminates program execution
  */
 static void
 inst_halt(void) {
 	plog("0x%04x: HALT executed", current_instruction);
+	terminate = 1;
+	term_reason = ERR_HALT;
 }
 
 
@@ -3044,6 +3046,9 @@ cpu_exit(void) {
 		break;
 	case ERR_SIGNAL:
 		perr("program execution stopped by signal");
+		break;
+	case ERR_HALT:
+		perr("HALT instruction executed");
 		break;
 	}
 	if (term_reason <= OK_CTRLC) {

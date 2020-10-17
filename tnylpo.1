@@ -27,7 +27,7 @@
 .\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH tnylpo 1 2020-09-05
+.TH tnylpo 1 2020-10-17
 .SH NAME
 tnylpo \- a utility to run programs written for CP/M-80
 .SH SYNOPSIS
@@ -170,11 +170,17 @@ ports has no direct effect, and reading them always returns a null byte.
 Same is true for all interrupt related instructions (while
 the I register may be set and read and the EI and DI instructions
 have the expected side effects, no interrupt will ever occur).
-The HALT instruction does not halt the processor (since there are no
-interrupts, this would stall the emulation), but acts as if a NMI had
-been received immediately after entering the halt state.
-(Well-behaved CP/M applications will not use any of these instructions
-anyway.)
+Executing a HALT instruction will end program execution (and thereby
+the execution of tnylpo) and is considered an error situation (see
+below under Program termination). Well-behaved CP/M applications
+should never use any of these instructions anyway.
+.PP
+Note that the behaviour of the HALT instruction has changed from
+earlier versions of tnylpo, where it was simply ignored (resp. acted
+as if a NMI had been received immediately after entering the halt state).
+This change allows unused memory areas to be initialized with HALT
+instructions, which increases the chances of detecting and stopping a runaway
+application program early.
 .PP
 The R register will be increased as expected; since
 application programs may use the current value of the R register for
@@ -184,11 +190,12 @@ procedure of Turbo Pascal seems to do this), the R register is initialized
 with a random value (otherwise, repeated runs of the same program would always
 generate the same sequence of random numbers).
 .PP
-All unused memory and all other registers (apart from PC and SP) are
-set to zero at the start of the emulation, and PC, SP, and the rest of
-the main memory (apart from the areas affected by 
-command line arguments, configuration options, and by loading the executable)
-are always initialized in the same way.
+At the start of program execution, all unused memory (i.e. the part of the
+TPA not occupied by the loaded executable as well as the unused parts of
+the zero page and the BIOS area) are initialized with the byte value 0x76
+(the HALT instruction).
+All registers apart from PC, SP, and R are set to zero, PC is set to 0x100,
+and SP points to a stack area at the top of the TPA.
 .SS File name translation
 In translating CP/M disk operations to Unix disk operations, tnylpo
 has to translate CP/M file names to Unix file names and
@@ -1357,7 +1364,8 @@ regular for the purpose of determining the exit status from tnylpo
 (see below, under EXIT STATUS).
 .PP
 Furthermore, a CP/M program will be terminated if it performs
-an action considered illegal by tnylpo, like trying to write to a
+an action considered illegal by tnylpo, like executing a HALT instruction,
+trying to write to a
 read-only file or to a file on a disk configured as read-only,
 passing invalid arguments to system calls, accessing a disk drive not
 configured, or requesting an illegal sequence of operations (like trying
@@ -1422,7 +1430,8 @@ routine hiding as 18th BIOS entry); this use of "magic addresses" might
 confuse debuggers trying to trace system calls.
 .PP
 The BIOS area (starting three bytes before the address
-stored at 0x0001) contains only the 17(+1)-element BIOS jump vector,
+stored at 0x0001) is page-aligned and contains the 17(+1)-element
+BIOS jump vector,
 the dummy disk structures (see below) and the above mentioned 19 RET
 instructions. The BDOS area (starting at the address stored at 0x0006) is
 even shorter, containing only a jump to 0xffed and the table 

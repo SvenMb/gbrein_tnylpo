@@ -108,7 +108,8 @@ enum reason {
 	ERR_ROFILE /* write access to R/O file attempted */,
 	ERR_HOST /* host system call failed */,
 	ERR_LOGIC  /* error in guest program logic */,
-	ERR_SIGNAL /* caught a signal */
+	ERR_SIGNAL /* caught a signal */,
+	ERR_HALT /* HALT instruction executed */
 };
 extern enum reason term_reason;
 
