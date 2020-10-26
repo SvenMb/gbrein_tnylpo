@@ -161,6 +161,9 @@ extern int dont_close;
 extern int reverse_bs_del;
 extern int delay_count;
 extern int delay_nanoseconds;
+extern int conf_color;
+extern int conf_foreground;
+extern int conf_background;
 
 
 /*

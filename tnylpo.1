@@ -27,7 +27,7 @@
 .\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH tnylpo 1 2020-10-17
+.TH tnylpo 1 2020-10-26
 .SH NAME
 tnylpo \- a utility to run programs written for CP/M-80
 .SH SYNOPSIS
@@ -56,6 +56,9 @@ tnylpo \- a utility to run programs written for CP/M-80
 .RI ( <n>
 |
 .BR @ )]
+.RB [ -o ( n | y |[ y, ]
+.IB <fg> , <bg>
+)]
 .RB [ -t
 .RI ( <n>
 |
@@ -637,6 +640,25 @@ below (see
 .BR "Character devices" ).
 .RE
 .PP
+.B colors =
+.RB "( " false " | " true " ) [ " ,
+.IB <fg> " , " <bg>
+]
+.br
+command line options
+.BR -on ", "
+.BR -oy ", "
+.BI -oy, <fg> , <bg>
+and
+.BI -o <fg> , <bg>
+.RS
+.PP
+switch color support on or off in full screen mode; optionally, the default
+foreground and background colors (digits in the range from 0 to 7) may be selected
+(see
+.BR "Color support" ).
+.RE
+.PP
 .B cpu delay =
 .IB <count> " , " <nanoseconds>
 .br
@@ -821,7 +843,7 @@ clears the display from the current cursor position to the end of the screen.
 .B <esc> K (0x1b 0x4b)
 clears the display from the current cursor position to the end of the line.
 .TP
-.BI "<esc> Y" " <line> <column> " "(0x1b 0x59 0xll 0xcc)"
+.BI "<esc> Y" " <line> <column> " "(0x1b 0x59 0xYY 0xXX)"
 moves the cursor to the specified position on the display; line and column
 numbers are given as graphical characters in the range of 0x20 (position 1)
 to 0x7e (position 95). If the column number is larger than the display width,
@@ -861,6 +883,16 @@ deletes the character at the cursor position and  moves characters to the
 right one position to the left (a blank character appears in the last column
 of the line).
 .TP
+.B <esc> S <color> (0x1b 0x53 0xCC)
+sets the background color of subsequent output characters; the color code is
+described below
+.RB ( "Color support" ).
+.TP
+.B <esc> T <color> (0x1b 0x54 0xCC)
+sets the foreground color of subsequent output characters; the color code is
+described below
+.RB ( "Color support" ).
+.TP
 .BR "<esc> a (0x1b 0x61)" " and " "<esc> b (0x1b 0x62)"
 make the cursor invisible resp. visible.
 .TP
@@ -881,7 +913,8 @@ switch on (arrgh!) resp. off (phew!) blinking characters.
 .TP
 .B <esc> m (0x1b 0x6d)
 switches off bold, underlined, blinking, and inverted characters as well
-as standout mode (see below).
+as standout mode (see below); resets the foreground and background colors
+to their defaults.
 .TP
 .BR "<esc> n (0x1b 0x6e)" " and " "<esc> o (0x1b 0x6f)"
 switch the cursor keys to application mode resp. back to regular (VT52) mode:
@@ -1044,6 +1077,97 @@ is useful if some other program or the host operating system mess up
 the user's screen. F10 sends a SIGINT to tnylpo, causing the emulation
 to stop abruptly, but allowing tnylpo itself to exit gracefully (this key
 is meant as a last-resort way of stopping a CP/M program gone haywire).
+.SS Color support
+If the underlying software and display hardware allow color output, tnylpo's terminal
+emulation supports the use of eight different colors, which may be selected
+as foreground resp. background colors of subsequently displayed characters. These
+colors are identified by the following numeric codes:
+.RS
+.PP
+0	black
+.br
+1	blue
+.br
+2	red
+.br
+3	magenta
+.br
+4	green
+.br
+5	cyan
+.br
+6	yellow
+.br
+7	white
+.RE
+.PP
+By default, color support is disabled even on color-capable displays; it must be
+explicitly enabled either by the configuration option
+.RS
+.PP
+.B colors = true
+.RE
+.PP
+or by the command line option
+.BR -oy .
+Both
+.B colors = true
+and
+.B -oy
+may be followed by two comma-separated color codes, which specify the default foreground
+resp. background colors of tnylpo's terminal emulation, e.g.
+.RS
+.PP
+.B colors = true, 6, 1
+.RE
+.PP
+(resp.
+.BR -oy,6,1 )
+will select yellow characters on a blue background. The default colors may be specified
+in the configuration file by
+.B colors = false, 6, 1
+even if color support is disabled (since this may be overridden by
+.BR -oy ).
+The command line option
+.B -o6,1
+is a shorthand form of
+.BR -oy,6,1 ,
+and
+.B -on
+may be used on to override the configuration file and disable
+color support. If no default colors have been specified either in the configuration
+file or on the command line, tnylpo defaults to
+.BR 7 " and " 0 ,
+i.e. to white text on a black background.
+.PP
+Application programs may select colors by issuing the escape sequences
+.BI "<esc> S " <color>
+and 
+.BI "<esc> T " <color>
+to choose the background resp. foreground colors of subsequently displayed
+characters;
+.I <color>
+is either a single ASCII digit in the range from
+.BR 0 " to " 7
+(0x31 to 0x37) corresponding to one of the colors supported by tnylpo, or the character 
+.B =
+(0x3d), which will select the respective default color. To render e.g. the text
+.B Warning!
+in red, a program may display the character sequence
+.RS
+.PP
+<esc> T 2 W a r n i n g ! <esc> T =
+.RE
+.PP
+on the full-screen console. Both foreground and background colors will also
+be reset to their defaults by the escape sequence
+.BR "<esc> m" ,
+which resets all text attributes.
+On monochrome devices or if color support has been disabled,
+.B <esc> S
+and
+.B <esc> T
+will still be accepted but silently ignored.
 .SS Character devices
 Besides the bidirectional console device, CP/M supports three unidirectional
 character devices, the output-only printer and paper tape punch devices
@@ -1199,6 +1323,7 @@ prioritizes compatibilty with CP/M 2.2. All unimplemented
 BDOS calls (i.e. those not listed in this section) are tolerated and conform
 to the (admittedly suboptimal) CP/M 2.2 convention of returning 0 in
 registers A, B, and HL.
+.RS
 .PP
 #0	System Reset
 .br
@@ -1289,6 +1414,7 @@ registers A, B, and HL.
 #108	Get/Set Program Return Code (CP/M 3)
 .br
 #141	Delay (MP/M)
+.RE
 .PP
 BDOS function #49 (Get/Set System Control Block) is only partially
 implemented: Attempts to write to the SCB are silently ignored, and only
@@ -1310,6 +1436,7 @@ system clock ticks passed in register DE; tnylpo defines a tick to last
 .PP
 In addition to the BDOS calls, tnylpo implements all BIOS calls of
 CP/M 2.2, but all disk related functions are dummies:
+.RS
 .PP
 .ta 1i
 BOOT	System Cold Start Initialization
@@ -1345,6 +1472,7 @@ WRITE	Write Selected Sector (dummy)
 LISTST	Printer Output Status
 .br
 SECTRAN	Sector Number Translation (dummy)
+.RE
 .PP
 No additional BIOS calls from CP/M 3 have been implemented, not even as
 dummies, i.e. any attempt to call them will result in undefined program
@@ -1680,6 +1808,15 @@ operation may meet similar problems). It is therefore recommended to reserve
 directories used as CP/M drives to conforming regular files or to give all
 other objects names not acceptable as CP/M file names (a leading dot
 may work wonders!).
+.SS Color limitiations
+The color support in tnylpo's terminal emulation is constrained by the
+capabilities of the
+.B ncurses
+library resp. of the display hardware. These may cause a limitation of the
+number of combinations of foreground and background colors (color pairs) which may be
+used on the display simultaneously. If tnylpo runs out of color pairs, the affected
+combinations will revert to the default foreground and background colors. This problem
+should only occur with parthological ("angry fruit salad") user interface designs.
 .SH EXAMPLES
 .B tnylpo -f ws.conf ws hugo.txt
 .PP

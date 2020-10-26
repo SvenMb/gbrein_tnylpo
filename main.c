@@ -184,6 +184,8 @@ usage(void) {
 	perr("    -f <fn>          read configuration from file <fn>");
 	perr("    -l (<n>|@)       number of full screen mode lines *");
 	perr("    -n               never actually close files");
+	perr("    -o (n|y|[y,]<fg>,<bg>)");
+	perr("                     use colors *");
 	perr("    -r               reverse backspace and delete keys *");
 	perr("    -s               use full screen mode console");
 	perr("    -t (<n>|@)       delay before exiting full screen mode *");
@@ -236,11 +238,11 @@ parse_size(int c, int min, int max, const char *arg, int *size_p) {
  * delay or two decimal integers separated by a comma
  */
 static int
-parse_delay(const char *arg, int *count_p, int *nanoseconds_p) {
+parse_delay(int *count_p, int *nanoseconds_p) {
 	int rc = 0;
 	unsigned long ul;
 	char *cp;
-	if (! strcmp(arg, "n")) {
+	if (! strcmp(optarg, "n")) {
 		*count_p = *nanoseconds_p = 0;
 	} else {
 		ul = strtoul(optarg, &cp, 10);
@@ -327,10 +329,10 @@ premature_exit:
  * parse argument of the -e option
  */
 static int
-parse_save(const char *arg) {
+parse_save(void) {
 	int rc = 0;
 	int range_set = 0, n;
-	const char *cp = arg;
+	const char *cp = optarg;
 	while (*cp) {
 		switch (*cp) {
 		case 'h':
@@ -467,6 +469,100 @@ premature_exit:
 
 
 /*
+ * helper function for parse_color()
+ */
+static void
+perr_color(void) {
+	perr("invalid -o option argument");
+}
+
+
+/*
+ * helper function for parse_color(): parses a digit '0'..'7'
+ */
+static int
+parse_colordigit(char *cp, char **cpp) {
+	int rc = (-1);
+	switch (*cp) {
+	case '0': rc = 0; break;
+	case '1': rc = 1; break;
+	case '2': rc = 2; break;
+	case '3': rc = 3; break;
+	case '4': rc = 4; break;
+	case '5': rc = 5; break;
+	case '6': rc = 6; break;
+	case '7': rc = 7; break;
+	default: goto premature_exit;
+	}
+	cp++;
+premature_exit:
+	*cpp = cp;
+	return rc;
+}
+		
+
+/*
+ * parse the color (-o) option parameter; this is either "n" for no
+ * colors or "y" if colors should be used. If "y" is given, it may be
+ * followed by a comma and two decimal, comma separated integers in the
+ * range from 0 to 7, which select the default foreground and background
+ * colors (if the colors are specified, the leading "y," is optional).
+ */
+static int
+parse_color(void) {
+	int rc = 0;
+	char *cp;
+	cp = optarg;
+	/*
+	 * no color
+	 */
+	conf_color = 0;
+	if (*cp == 'n') {
+		if (*(cp + 1) != '\0') {
+			perr_color();
+			rc = (-1);
+		}
+		goto premature_exit;
+	}
+	/*
+	 * color requested
+	 */
+	conf_color = 1;
+	if (*cp == 'y') {
+		cp++;
+		if (*cp == '\0') goto premature_exit;
+		if (*cp != ',') {
+			perr_color();
+			rc = (-1);
+			goto premature_exit;
+		}
+		cp++;
+	}
+	/*
+	 * get foreground color
+	 */
+	conf_foreground = parse_colordigit(cp, &cp);
+	if (conf_foreground == (-1) || *cp != ',') {
+		perr_color();
+		rc = (-1);
+		goto premature_exit;
+	}
+	cp++;
+	/*
+	 * get background color
+	 */
+	conf_background = parse_colordigit(cp, &cp);
+	if (conf_background == (-1) || *cp != '\0') {
+		perr_color();
+		rc = (-1);
+		goto premature_exit;
+	}
+premature_exit:
+	return rc;
+}
+
+
+/*
  * get the configuration
  *
  * After parsing the command line, further configuration values are
@@ -480,7 +576,8 @@ get_config(int argc, char **argv) {
 	size_t l;
 	unsigned long ul;
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "abc:d:e:f:l:nrst:v:wy:z:")) != EOF) {
+	while ((opt = getopt(argc, argv,
+	    "abc:d:e:f:l:no:rst:v:wy:z:")) != EOF) {
 		switch (opt) {
 		case 'a':
 			/*
@@ -642,7 +739,7 @@ get_config(int argc, char **argv) {
 				only_once('y');
 				rc = (-1);
 			} else {
-				if (parse_delay(optarg, &delay_count,
+				if (parse_delay(&delay_count,
 				    &delay_nanoseconds)) rc = (-1);
 			}
 			break;
@@ -723,7 +820,22 @@ get_config(int argc, char **argv) {
 				 * the -e option argument is complex,
 				 * so it is parsed in a separate function
 				 */
-				if (parse_save(optarg)) rc = (-1);
+				if (parse_save()) rc = (-1);
+			}
+			break;
+		case 'o':
+			/*
+			 * use terminal colors if available
+			 */
+			if (conf_color != (-1)) {
+				only_once('o');
+				rc = (-1);
+			} else {
+				/*
+				 * the -o option argument is complex,
+				 * so it is parsed in a separate function
+				 */
+				if (parse_color()) rc = (-1);
 			}
 			break;
 		case '?':
@@ -811,6 +923,12 @@ get_config(int argc, char **argv) {
 	 * don't reverse backspace and delete keys by default
 	 */
 	if (reverse_bs_del == (-1)) reverse_bs_del = 0;
+	/*
+	 * massage color option
+	 */
+	if (conf_color == (-1)) conf_color = 0; /* no color */
+	if (conf_foreground == (-1)) conf_foreground = 7; /* white */
+	if (conf_background == (-1)) conf_background = 0; /* black */
 	/*
 	 * default mode is batch
 	 */

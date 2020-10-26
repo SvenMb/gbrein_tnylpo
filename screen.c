@@ -56,7 +56,9 @@ static enum term_state {
 	ST_NORMAL, /* not in escape sequence */
 	ST_ESCAPE, /* escape seen */
 	ST_ESCAPEY, /* escape-Y seen */
-	ST_ESCAPEYL /* escape-Y-<line> seen */
+	ST_ESCAPEYL, /* escape-Y-<line> seen */
+	ST_ESCAPES, /* escape-S seen */
+	ST_ESCAPET /* escape-T seen */
 } state = ST_NORMAL;
 static int escape_y_line = 0, escape_y_col = 0;
 
@@ -106,6 +108,23 @@ static int app_keypad = 0;
 
 
 /*
+ * color output valiables
+ */
+static int use_color = 0;
+static int foreground = 0, background = 0;
+static short pairs[8][8] = {
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) },
+    { (-1), (-1), (-1), (-1), (-1), (-1), (-1), (-1) }
+};
+
+
+/*
  * is input currently non-blocking?
  */
 static int noblock = 0;
@@ -122,6 +141,15 @@ static WINDOW *win_p = NULL, *pad_p = NULL;
  * Curses-compatible representation of the blank character
  */
 static cchar_t blank;
+
+
+/*
+ * conversion table between tnylpo's color numbers and curses
+ */
+static short curses_colors[8] = {
+    COLOR_BLACK, COLOR_BLUE, COLOR_RED, COLOR_MAGENTA,
+    COLOR_GREEN, COLOR_CYAN, COLOR_YELLOW, COLOR_WHITE
+};
 
 
 /*
@@ -395,6 +423,40 @@ try_read(void) {
 
 
 /*
+ * Get the color pair for a given color combination; if it does not
+ * exist, allocate it; if it cannot be allocated, return the standard
+ * pair.
+ */
+static inline short
+get_pair(int fg, int bg) {
+	static int out_of_pairs = 0;
+	/*
+	 * color pair 0 is reserved
+	 */
+	static short free_pair = 1;
+	short p;
+	p = pairs[fg][bg];
+	if (p == (-1)) {
+		if (free_pair >= COLOR_PAIRS || init_pair(free_pair,
+                    curses_colors[fg], curses_colors[bg]) == ERR) {
+		    	/*
+			 * complain if we run out of color pairs, but only once
+			 */
+		    	if (! out_of_pairs) {
+				plog("out of color pairs");
+				out_of_pairs = 1;
+			}
+			p = 0;
+		} else {
+			p = free_pair++;
+		}
+		pairs[fg][bg] = p;
+	}
+	return p;
+}
+
+
+/*
  * initializes the VT52 terminal emulation; must be called before all
  * other crt_xxx() functions
  */
@@ -403,6 +465,7 @@ crt_init(void) {
 	int rc = 0;
 	wchar_t wcs[2];
 	wint_t wc;
+	short int pair;
 	/*
 	 * redirections are not allowed
 	 */
@@ -419,6 +482,18 @@ crt_init(void) {
 	if (! win_p) {
 		rc = 2;
 		goto premature_exit;
+	}
+	/*
+	 * set up colors if requested and available
+	 */
+	if (conf_color && has_colors()) {
+		use_color = 1;
+		foreground = conf_foreground;
+		background = conf_background;
+		if (start_color() == ERR) {
+			rc = 4;
+			goto premature_exit;
+		}
 	}
 	/*
 	 * get physical screen dimensions; if requested, these will be
@@ -455,18 +530,22 @@ crt_init(void) {
 	 * initialize the blank character
 	 */
 	wc = from_cpm(0x20 /* SPC */);
-	if (wc != (-1)) {
-		wcs[0] = wc;
-		wcs[1] = L'\0';
-		setcchar(&blank, wcs, 0, 0, NULL);
-		wbkgrnd(pad_p, &blank);
-	}
+	if (wc != (-1)) wc = L' ';
+	wcs[0] = wc;
+	wcs[1] = L'\0';
+	pair = use_color ? get_pair(foreground, background) : 0;
+	setcchar(&blank, wcs, 0, pair, NULL);
+	bkgrnd(&blank);
+	wbkgrnd(pad_p, &blank);
 	/*
 	 * switch to application keypad mode, allow hardware assisted
 	 * line insertion/deletion; show the current (empty) VT52 screen
 	 */
 	keypad(pad_p, 1);
 	idlok(pad_p, 1);
+	erase();
+	refresh();
+	werase(pad_p);
 	show_pad();
 premature_exit:
 	/*
@@ -485,9 +564,33 @@ premature_exit:
 	case 3:
 		perr("newpad() failed");
 		break;
+	case 4:
+		perr("cannot initialize colors");
+		break;
 	}
 	return rc ? (-1) : 0;
 }
+
+
+/*
+ * helper function for crt_out(): set foreground or background color
+ */
+static inline int
+set_color(unsigned char c, int curr_color, int def_color) {
+	switch (c) {
+	case 0x30 /* 0 */: return 0;
+	case 0x31 /* 1 */: return 1;
+	case 0x32 /* 2 */: return 2;
+	case 0x33 /* 3 */: return 3;
+	case 0x34 /* 4 */: return 4;
+	case 0x35 /* 5 */: return 5;
+	case 0x36 /* 6 */: return 6;
+	case 0x37 /* 7 */: return 7;
+	case 0x3d /* = */: return def_color;
+	}
+	return curr_color;
+}
+
 
 /*
  * display a character on the emulated VT52 screen, handle escape sequences
@@ -496,6 +599,7 @@ void
 crt_out(unsigned char c) {
 	int t;
 	wint_t wc;
+	short pair;
 	cchar_t cc;
 	wchar_t wcs[2];
 	/*
@@ -603,11 +707,12 @@ crt_out(unsigned char c) {
 		 */
 		wcs[0] = wc;
 		wcs[1] = L'\0';
+		pair = use_color ? get_pair(foreground, background) : 0;
 		setcchar(&cc, wcs, ((is_standout ? A_STANDOUT : 0) |
 		    (is_underline ? A_UNDERLINE : 0) |
 		    (is_blink ? A_BLINK : 0) |
 		    (is_reverse ? A_REVERSE : 0) |
-		    (is_bold ? A_BOLD : 0)), 0, NULL);
+		    (is_bold ? A_BOLD : 0)), pair, NULL);
 		/*
 		 * ... and add it to the VT52 screen
 		 */
@@ -745,6 +850,18 @@ crt_out(unsigned char c) {
 			 */
 			wdelch(pad_p);
 			goto redraw_screen;
+		case 0x53 /* S */:
+			/*
+			 * set beckground color --- expect color code
+			 */
+			state = ST_ESCAPES;
+			break;
+		case 0x54 /* T */:
+			/*
+			 * set foreground color --- expect color code
+			 */
+			state = ST_ESCAPET;
+			break;
 		case 0x59 /* Y */:
 			/*
 			 * direct cursor positioning --- expect line number
@@ -852,13 +969,15 @@ crt_out(unsigned char c) {
 			break;
 		case 0x6d /* m */:
 			/*
-			 * all attributes off; extension to VT52
+			 * all attributes off, reset colors to default; extension to VT52
 			 */
 			is_bold = 0;
 			is_blink = 0;
 			is_reverse = 0;
 			is_underline = 0;
 			is_standout = 0;
+			foreground = conf_foreground;
+			background = conf_background;
 			break;
 		case 0x6e /* n */:
 			/*
@@ -922,6 +1041,20 @@ crt_out(unsigned char c) {
 			cursor_x = escape_y_col;
 			goto move_cursor;
 		}
+		break;
+	case ST_ESCAPES:
+		/*
+		 * set background color
+		 */
+		state = ST_NORMAL;
+		background = set_color(c, background, conf_background);
+		break;
+	case ST_ESCAPET:
+		/*
+		 * set foreground color
+		 */
+		state = ST_NORMAL;
+		foreground = set_color(c, foreground, conf_foreground);
 		break;
 	}
 	goto do_nothing;

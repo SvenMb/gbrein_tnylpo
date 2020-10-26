@@ -141,6 +141,12 @@ const char *conf_save_file = NULL;
 int conf_save_hex = 0;
 int conf_save_start = 0;
 int conf_save_end = 0;
+/*
+ * use colors in terminal
+ */
+int conf_color = (-1);
+int conf_foreground = (-1);
+int conf_background = (-1);
 
 
 /*
@@ -1154,6 +1160,63 @@ premature_exit:
 
 
 /*
+ * parse color options line from configuration file:
+ * "colors" "=" ( "false" | "true" ) [ "," <int 0..7> "," <int 0..7> ] 
+ */
+static int
+parse_colors(int *colors_p, int *fg_p, int *bg_p) {
+	int rc = 0;
+	if (*colors_p != (-1)) {
+	    	perr("%s(%d): color options redefined", cfn, ln);
+		rc = (-1);
+		goto premature_exit;
+	}
+	/*
+	 * check if colors should be used
+	 */
+	rc = parse_boolean(colors_p);
+	if (rc) goto premature_exit;
+	if (token == ',') {
+		/*
+		 * default colors specified
+		 */
+		get_token();
+		/*
+		 * parse foreground color
+		 */
+		if (token != '0' || token_ul > 7) {
+			pexpected("foreground color number (0..7)");
+			rc = (-1);
+			goto premature_exit;
+		}
+		*fg_p = (int) token_ul;
+		get_token();
+		/*
+		 * check for separator
+		 */
+		if (token != ',') {
+			pexpected(",");
+			rc = (-1);
+			goto premature_exit;
+		}
+		get_token();
+		/*
+		 * parse background color
+		 */
+		if (token != '0' || token_ul > 7) {
+			pexpected("background color number (0..7)");
+			rc = (-1);
+			goto premature_exit;
+		}
+		*bg_p = (int) token_ul;
+		get_token();
+	}
+premature_exit:
+	return rc;
+}
+
+
+/*
  * read parameters from the configuration file; parameters already
  * defined on the command line take precedence
  */
@@ -1163,7 +1226,8 @@ parse_config(void) {
 	    temp_dont_close = (-1), temp_interactive = (-1),
 	    temp_screen_delay = (-1), temp_default_drive = (-1),
 	    temp_reverse_bs_del = (-1), temp_delay_count = (-1),
-	    temp_delay_nanoseconds = (-1);
+	    temp_delay_nanoseconds = (-1), temp_color = (-1),
+	    temp_foreground = (-1), temp_background = (-1);
 	enum dump temp_dump = 0;
 	wchar_t line[L_LINE];
 	size_t l;
@@ -1633,7 +1697,19 @@ parse_config(void) {
 				continue;
 			}
 		} else if (! wcscmp(token_ident, L"dump")) {
+			/*
+			 * dump definition
+			 */
 			if (parse_dump(&temp_dump)) {
+				rc = (-1);
+				continue;
+			}
+		} else if (! wcscmp(token_ident, L"colors")) {
+			/*
+			 * color definition
+			 */
+			if (parse_colors(&temp_color, &temp_foreground,
+			    &temp_background)) {
 				rc = (-1);
 				continue;
 			}
@@ -1663,6 +1739,9 @@ parse_config(void) {
 	if (conf_interactive == (-1)) conf_interactive = temp_interactive;
 	if (default_drive == (-1)) default_drive = temp_default_drive;
 	if (conf_dump == 0) conf_dump = temp_dump;
+	if (conf_color == (-1)) conf_color = temp_color;
+	if (conf_foreground == (-1)) conf_foreground = temp_foreground;
+	if (conf_background == (-1)) conf_background = temp_background;
 	if (delay_count == (-1)) {
 		delay_count = temp_delay_count;
 		delay_nanoseconds = temp_delay_nanoseconds;
