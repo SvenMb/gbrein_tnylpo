@@ -631,7 +631,7 @@ get_config(int argc, char **argv) {
 			/*
 			 * number of columns of the VT52 emulation
 			 */
-			if (lines) {
+			if (cols) {
 				only_once('c');
 				rc = (-1);
 			}
