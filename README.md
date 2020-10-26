@@ -77,7 +77,8 @@ optionally, for printer, punch, and reader) I/O
 * provides a built-in curses based emulation of the DEC VT52
 terminal for full-screen applications (with extensions such as
 eight bit characters, an alternate character set, insert/delete line
-commands, character attributes, and VT100 box drawing characters)
+commands, character attributes, VT100 box drawing characters, and
+color support)
 * shields CP/M programs from terminal window resizing
 * allows to combine CP/M programs with Unix shell redirections and pipelines.
 ## What CP/M applications work with `tnylpo`?
