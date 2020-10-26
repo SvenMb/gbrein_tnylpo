@@ -2869,25 +2869,43 @@ static void
 dump_plane(unsigned long counters[256], const char *name) {
 	int low, high, n;
 	char buffer[1024], *cp;
-	plog("instruction counters for %s:", name);
-	cp = buffer;
-	cp += sprintf(cp, "  ");
-	for (high = 0; high < 16; high++) {
-		cp += sprintf(cp, "         %1xy", high);
-	}
-	plog("%s", buffer);
-	for (low = 0; low < 16; low++) {
+	/*
+	 * check if all counters in the plane are zero
+	 */
+	for (n = 0; n < 256 && ! counters[n]; n++);
+	if (n == 256) {
+		/*
+		 * all counters are zero: log a single line
+		 * (this will be the case for planes other than the
+		 * base plane after executing a 8080 program)
+		 */
+		plog("instruction counters for %s: all zero", name);
+	} else {
+		/*
+		 * at least one counter is greater than zero:
+		 * log full table
+		 */
+		plog("instruction counters for %s:", name);
 		cp = buffer;
-		cp += sprintf(cp, "x%1x", low);
+		cp += sprintf(cp, "  ");
 		for (high = 0; high < 16; high++) {
-			n = high * 16 + low;
-			if (counters[n]) {
-				cp += sprintf(cp, " %10lu", counters[n]);
-			} else {
-				cp += sprintf(cp, "          -");
-			}
+			cp += sprintf(cp, "         %1xy", high);
 		}
 		plog("%s", buffer);
+		for (low = 0; low < 16; low++) {
+			cp = buffer;
+			cp += sprintf(cp, "x%1x", low);
+			for (high = 0; high < 16; high++) {
+				n = high * 16 + low;
+				if (counters[n]) {
+					cp += sprintf(cp, " %10lu",
+					    counters[n]);
+				} else {
+					cp += sprintf(cp, "          -");
+				}
+			}
+			plog("%s", buffer);
+		}
 	}
 }
 
@@ -3074,11 +3092,11 @@ cpu_exit(void) {
 	 * dump instruction counters
 	 */
 	if (log_level >= LL_COUNTERS) {
-		dump_plane(counters, "base plane ");
+		dump_plane(counters, "base plane");
 		dump_plane(cb_counters, "0xcb plane");
 		dump_plane(dd_counters, "0xdd base plane");
 		dump_plane(dd_cb_counters, "0xdd 0xcb plane");
-		dump_plane(ed_counters, "0xed plane ");
+		dump_plane(ed_counters, "0xed plane");
 		dump_plane(fd_counters, "0xfd base plane");
 		dump_plane(fd_cb_counters, "0xfd 0xcb plane");
 	}
