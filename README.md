@@ -156,7 +156,7 @@ The subdirectory `mine` contains a simple text-based CP/M game which
 can be used to test/demonstrate `tnylpo`.
 ## I don't want to read 1000+ lines just to run a program!
 All CP/M program and data file names are expected in lower case;
-names like `TURBO.COM`, `M80.COM`, or `PGRM.MAC` need to be
+files called `TURBO.COM`, `M80.COM`, or `PGRM.MAC` need to be
 renamed to `turbo.com`, `m80.com`, resp. `pgrm.mac` to be accessible
 by tnylpo.
 
