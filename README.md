@@ -115,7 +115,7 @@ reported as working:
 * MicroPro WordMaster 1.07A *(1)*
 
 Notes:
-1. needs to be run with (resp. some features need) the `-s` (full screen console) option.
+1. needs to be run with (resp. some features need) the `-s` (full-screen console) option.
 2. needs to be run with the `-n` (don't close files) option.
 3. as I said, go play with your smartphone, kiddy!
 ## How do I build it?
@@ -170,9 +170,9 @@ tnylpo pgrm
 Without any configuration file and command line options, tnylpo will
 use the current Unix working directory as CP/M drive A: (where
 CP/M programs and all required files must reside) and default
-to the line-orientated console device (be sure to quote characters
+to the line-orientated console device. Be sure to quote characters
 like `$`, `*` and `?` in your CP/M command line, or the Unix shell will
-try to expand them).
+try to expand them.
 
 Full-screen applications may be run using the `-s` option (to be
 useful, they must be configured for the VT52 terminal), e.g.
@@ -183,8 +183,9 @@ tnylpo -s turbo
 To use more advanced features of tnylpo (multiple disk drives,
 custom character sets, or a log file) or to avoid typing multiple
 command line options, a configuration file is needed; a model
-configuration file with a short explanation may be found in the
-`EXAMPLES` section near the end of the man page.
+configuration file for a full-screen application with a short
+explanation may be found in the `EXAMPLES` section near the end
+of the man page.
 ## What is the legal situation?
 `tnylpo` is Open Source under a BSD-style license (see `LICENSE`);
 apart from that, feel free to use it, modify it, or sell it for big
