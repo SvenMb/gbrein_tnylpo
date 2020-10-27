@@ -154,6 +154,37 @@ will then tell you how to get your CP/M-80 programs running.
 
 The subdirectory `mine` contains a simple text-based CP/M game which
 can be used to test/demonstrate `tnylpo`.
+## I don't want to read 1000+ lines just to run a program!
+All CP/M program and data file names are expected in lower case;
+names like `TURBO.COM`, `M80.COM`, or `PGRM.MAC` need to be
+renamed to `turbo.com`, `m80.com`, resp. `pgrm.mac` to be accessible
+by tnylpo.
+
+Most non-interactive CP/M programs (compilers, assembers, linkers etc.)
+can be run by simply prefixing `tnylpo` to the CP/M command line, e.g.
+```
+tnylpo m80 =pgrm/z
+tnylpo l80 pgrm/n,pgrm/e
+tnylpo pgrm
+```
+Without any configuration file and command line options, tnylpo will
+use the current Unix working directory as CP/M drive A: (where
+CP/M programs and all required files must reside) and default
+to the line-orientated console device (be sure to quote characters
+like `$`, `*` and `?` in your CP/M command line, or the Unix shell will
+try to expand them).
+
+Full-screen applications may be run using the `-s` option (to be
+useful, they must be configured for the VT52 terminal), e.g.
+```
+tnylpo -s turbo
+```
+
+To use more advanced features of tnylpo (multiple disk drives,
+custom character sets, or a log file) or to avoid typing multiple
+command line options, a configuration file is needed; a model
+configuration file with a short explanation may be found in the
+`EXAMPLES` section near the end of the man page.
 ## What is the legal situation?
 `tnylpo` is Open Source under a BSD-style license (see `LICENSE`);
 apart from that, feel free to use it, modify it, or sell it for big
