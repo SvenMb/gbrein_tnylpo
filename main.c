@@ -591,6 +591,18 @@ get_config(int argc, char **argv) {
 			}
 			break;
 		case 's':
+			/*
+			 * use terminal emulation (-s) or the line
+			 * orientated console interface (-b)
+			 */
+			if (conf_interactive != (-1)) {
+				perr("options -b and -s may be specified "
+				    "only once and are mutually exclusive");
+				rc = (-1);
+			} else {
+				conf_interactive = 1;
+			}
+			break;
 		case 'b':
 			/*
 			 * use terminal emulation (-s) or the line
@@ -601,7 +613,7 @@ get_config(int argc, char **argv) {
 				    "only once and are mutually exclusive");
 				rc = (-1);
 			} else {
-				conf_interactive = (optopt == 's');
+				conf_interactive = 0;
 			}
 			break;
 		case 'f':
