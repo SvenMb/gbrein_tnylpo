@@ -1,4 +1,4 @@
-# tnylpo
+# `tnylpo`
 ## What is this?
 `tnylpo` allows the execution of programs written for CP/M-80
 version 2.2 under Unixy operating systems. It has been tested
@@ -154,6 +154,17 @@ will then tell you how to get your CP/M-80 programs running.
 
 The subdirectory `mine` contains a simple text-based CP/M game which
 can be used to test/demonstrate `tnylpo`.
+## Is `tnylpo` available as a binary package?
+Currently, I do not provide `tnylpo` in binary form for any platform.
+
+FreeBSD has added `tnylpo` to its package collection
+at the end of 2020, so if you are running a supported release of FreeBSD,
+you can easily add `tnylpo` to your system by issuing the command
+`pkg install tnylpo`.
+
+OpenBSD added `tnylpo` to its package collection
+after its OpenBSD 6.8 release, so users of 6.8-current (or later) may
+install `tnylpo` with the command `pkg_add tnylpo`.
 ## I don't want to read 1000+ lines just to run a program!
 All CP/M program and data file names are expected in lower case;
 files called `TURBO.COM`, `M80.COM`, or `PGRM.MAC` need to be
@@ -167,7 +178,7 @@ tnylpo m80 =pgrm/z
 tnylpo l80 pgrm/n,pgrm/e
 tnylpo pgrm
 ```
-Without any configuration file and command line options, tnylpo will
+Without any configuration file and command line options, `tnylpo` will
 use the current Unix working directory as CP/M drive A: (where
 CP/M programs and all required files must reside) and default
 to the line-orientated console device. Be sure to quote characters
@@ -180,7 +191,7 @@ useful, they must be configured for the VT52 terminal), e.g.
 tnylpo -s turbo
 ```
 
-To use more advanced features of tnylpo (multiple disk drives,
+To use more advanced features of `tnylpo` (multiple disk drives,
 custom character sets, or a log file) or to avoid typing multiple
 command line options, a configuration file is needed; a model
 configuration file for a full-screen application with a short
