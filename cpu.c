@@ -2801,9 +2801,9 @@ cpu_run(void) {
 			opcode2 = prefix ? fetch_m1() : fetch();
 			if (log_level >= LL_COUNTERS) {
 				switch (prefix) {
-				case 0xdd: dd_cb_counters[opcode2]++;
-				case 0xfd: fd_cb_counters[opcode2]++;
-				default: cb_counters[opcode2]++;
+				case 0xdd: dd_cb_counters[opcode2]++; break;
+				case 0xfd: fd_cb_counters[opcode2]++; break;
+				default: cb_counters[opcode2]++; break;
 				}
 			}
 		} else if (opcode == 0xed) {
@@ -2815,9 +2815,9 @@ cpu_run(void) {
 		} else {
 			if (log_level >= LL_COUNTERS) {
 				switch (prefix) {
-				case 0xdd: dd_counters[opcode]++;
-				case 0xfd: fd_counters[opcode]++;
-				default: counters[opcode]++;
+				case 0xdd: dd_counters[opcode]++; break;
+				case 0xfd: fd_counters[opcode]++; break;
+				default: counters[opcode]++; break;
 				}
 			}
 		}
