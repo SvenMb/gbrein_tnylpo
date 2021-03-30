@@ -27,7 +27,7 @@
 .\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH tnylpo 1 2020-10-26
+.TH tnylpo 1 2021-03-30
 .SH NAME
 tnylpo \- a utility to run programs written for CP/M-80
 .SH SYNOPSIS
@@ -1609,7 +1609,7 @@ tnylpo doesn't emulate the CCP, so every program using its features
 .B $$$.SUB
 file and expecting the CCP to execute its
 contents) will not work correctly. Ending a program by simply returning
-to the CCP is supported; tnylpo initializes a 8 level CCP stack at
+to the CCP is supported; tnylpo initializes an 8 level CCP stack at
 the end of the TPA (below the OS serial number) and pushes the address of the
 WBOOT entry in the
 BIOS vector, so a program trying to return to the CCP will terminate
@@ -1816,7 +1816,7 @@ library resp. of the display hardware. These may cause a limitation of the
 number of combinations of foreground and background colors (color pairs) which may be
 used on the display simultaneously. If tnylpo runs out of color pairs, the affected
 combinations will revert to the default foreground and background colors. This problem
-should only occur with parthological ("angry fruit salad") user interface designs.
+should only occur with pathological ("angry fruit salad") user interface designs.
 .SH EXAMPLES
 .B tnylpo -f ws.conf ws hugo.txt
 .PP
