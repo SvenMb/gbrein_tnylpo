@@ -178,7 +178,7 @@ console_init(void) {
 	new_termios.c_lflag &= ~ICANON;
 	new_termios.c_cc[VMIN] = 1;
 	new_termios.c_cc[VTIME] = 0;
-	new_termios.c_oflag &= OPOST;
+	new_termios.c_oflag &= ~OPOST;
 	if (set_term(fileno(stdin), &new_termios) == (-1)) {
 		perr("tcsetattr() failed: %s", strerror(errno));
 		rc = (-1);
@@ -392,7 +392,7 @@ console_status(void) {
 int
 console_exit(void) {
 	/*
-	 * the VT52 emulation (quite a lot mor work) is handled separately
+	 * the VT52 emulation (quite a lot more work) is handled separately
 	 */
 	if (conf_interactive) {
 		crt_exit();
@@ -402,7 +402,6 @@ console_exit(void) {
 	 * output a pending CR (only happens if output is redirected to a file)
 	 */
 	if (last_was_cr) putwchar(L'\r');
-	restore_terminal();
 	/*
 	 * ensure shell prompt appears on the start of a new line (only
 	 * happens if the console is in non-redirected line mode)
@@ -413,6 +412,10 @@ console_exit(void) {
 	case NL_CR: putwchar(L'\n'); break;
 	case NL_OTHER: putwchar(L'\r'); putwchar('\n'); break;
 	}
+	/*
+	 * reset old terminal parameters
+	 */
+	restore_terminal();
 premature_exit:
 	return 0;
 }
@@ -435,6 +438,10 @@ static int printer_error = 0, punch_error = 0, reader_error = 0;
 static int printer_cr = 0, punch_cr = 0, reader_lf = 0;
 
 
+/*
+ * macro to define printer_wchar() and punch_wchar(), which have exactly
+ * the same structure: output character, remember last error
+ */
 #define DEV_WCHAR(DEV) \
 static void \
 DEV##_wchar(wchar_t wc) { \
@@ -453,6 +460,11 @@ premature_exit: \
 }
 
 
+/*
+ * macro to define printer_out() and punch_out(), which have exactly the
+ * same structure: do CR/LF / NL conversion depending on the device state
+ * (raw/text), remember last error
+ */
 #define DEV_OUT(DEV) \
 void \
 DEV##_out(unsigned char c) { \
