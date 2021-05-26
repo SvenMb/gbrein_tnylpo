@@ -45,6 +45,9 @@
 #include "tnylpo.h"
 
 
+/*
+ * dynamically allocated Z80 memory (64KB)
+ */
 unsigned char *memory = NULL;
 
 
@@ -153,6 +156,10 @@ set_word(int address, int word) {
 }
 
 
+/*
+ * helper functions to get and set the value of a register pair
+ * (IX and IY are treated as register pairs in analogy to HL)
+ */
 static inline int
 get_bc(void) { int bc = reg_b; bc <<= 8; bc |= reg_c; return bc; }
 
@@ -1427,7 +1434,7 @@ inst_sphl(void) {
 
 
 /*
- * get byte from port to A
+ * get byte from port to A (dummy)
  */
 static void
 inst_ina(void) {
@@ -1436,14 +1443,14 @@ inst_ina(void) {
 
 
 /*
- * put byte in A to port
+ * put byte in A to port (dummy)
  */
 static void
 inst_outa(void) { }
 
 
 /*
- * enable interrupts
+ * enable interrupts (dummy)
  */
 static void
 inst_ei(void) {
@@ -1452,7 +1459,7 @@ inst_ei(void) {
 
 
 /*
- * disable interrupts
+ * disable interrupts (dummy)
  */
 static void
 inst_di(void) {
@@ -1631,7 +1638,7 @@ inst_indr(void) {
 
 
 /*
- * NEG
+ * NEG (two's complement of A)
  */
 static void
 inst_neg(void) {
