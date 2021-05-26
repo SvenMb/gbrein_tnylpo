@@ -53,6 +53,9 @@
 /*
  * memory layout of the emulated CP/M computer
  */
+/*
+ * allocation vector is 64 bytes (512 bits): 512 blocks of 16KB in a 8MB drive
+ */
 #define ALV_SIZE 64
 #define ALV (MAGIC_ADDRESS - ALV_SIZE)
 #define DPB_SIZE 15
@@ -106,6 +109,10 @@ static int current_dma = DEFAULT_DMA;
  * OS serial number
  */
 static const unsigned char serial_number[6] = {
+	/*
+	 * 0x00, 0x16, 0x00: a vanilla 2.2 CP/M system
+	 * 0xc0, 0xff, 0xee: serial number
+	 */ 
 	0x00, 0x16, 0x00, 0xc0, 0xff, 0xee
 };
 
@@ -155,6 +162,9 @@ get_tpa_end(void) { return BDOS_START - 1; }
 #define REGS_HL 0x20
 
 
+/*
+ * helper function: dump 8080 general registers according to the mask in regs
+ */
 static const char *
 format_regs(int regs) {
 	static char buffer[80];
@@ -174,18 +184,27 @@ format_regs(int regs) {
 }
 
 
+/*
+ * helper function: log system call entry
+ */
 static void
 sys_entry(const char *name, int regs) {
 	plog("%s entry%s", name, format_regs(regs));
 }
 
 
+/*
+ * helper function: log system call return
+ */
 static void
 sys_exit(const char *name, int regs) {
 	plog("%s exit%s", name, format_regs(regs));
 }
 
 
+/*
+ * macros for the system call entry/exit logging
+ */
 #define FDOS_ENTRY(name, regs) \
 	if (log_level >= LL_FDOS) sys_entry(name, regs)
 #define FDOS_EXIT(name, regs) \
@@ -197,7 +216,8 @@ sys_exit(const char *name, int regs) {
 
 
 /*
- * checks if a base filename is "nice", i. e. acceptable both in CP/M and Unix
+ * checks if a Unix base filename is "nice", i. e. acceptable both in
+ * CP/M and Unix
  */
 static int
 is_nice_filename(const char *fn) {
@@ -586,6 +606,7 @@ premature_exit:
 #define FILE_ROFILE 0x2 /* file was opened read only */
 #define FILE_WRITTEN 0x4 /* file has been written to */
 
+
 /*
  * xor value for file ID in FCB
  */
@@ -852,7 +873,7 @@ os_init(void) {
 	 */
 	fp = fopen(command_file, "rb");
 	if (! fp) {
-		perr("cannot open command file %s. %s", command_file,
+		perr("cannot open command file %s: %s", command_file,
 		    strerror(errno));
 		rc = (-1);
 		goto premature_exit;
@@ -884,8 +905,7 @@ os_init(void) {
 		goto premature_exit;
 	}
 	/*
-	 * set up RET instructions in all magic addresses (to keep
-	 * debuggers happy
+	 * set up RET instructions in all magic addresses
 	 */
 	memset(memory + MAGIC_ADDRESS, 0xc9, MEMORY_SIZE - MAGIC_ADDRESS);
 	/*
@@ -915,7 +935,7 @@ os_init(void) {
 	       (((MAGIC_ADDRESS + 2) >> 8) & 0xff);
 
 	/*
-	 * set up BIOS vector (jps to MAGIC_ADDRESS + 1 ... MAGIC_ADDRESS + 16)
+	 * set up BIOS vector (jps to MAGIC_ADDRESS + 1 ... MAGIC_ADDRESS + 18)
 	 */
 	for (i = 0; i < BIOS_VECTOR_COUNT; i++) {
 		t = MAGIC_ADDRESS + 1 + i;
@@ -998,7 +1018,7 @@ os_init(void) {
 	memory[BDOS_ENTRY + 2] = ((BDOS_START >> 8) & 0xff);
 	/*
 	 * convert command line arguments to wchar_t and splice them into
-	 * a DMA_SIZEd buffer
+	 * a DMA_SIZEd buffer (maximal 127 characters + terminator)
 	 */
 	buffer[0] = L'\0';
 	bp = buffer;
@@ -1022,7 +1042,7 @@ os_init(void) {
 	}
 	/*
 	 * convert command line to CP/M character set and copy it to
-	 * the default DMA area
+	 * the default DMA area (leading length byte and up to 127 characters)
 	 */
 	memory[DEFAULT_DMA] = bp - buffer;
 	for (bp = buffer, i = DEFAULT_DMA + 1; *bp; bp++) {
@@ -1493,7 +1513,7 @@ bdos_reset_disk_system(void) {
 
 
 /*
- * checks a drive number 0..15 if it is a valid and configured drive
+ * checks a drive number 0..15 if it represents a valid and configured drive
  * 0 corresponds to drive A, 15 to drive P, i.e. there is no
  * default drive!
  */
@@ -1574,7 +1594,7 @@ get_unix_name(int fcb, char unix_name[L_UNIX_NAME], const char *caller) {
 	/*
 	 * The assignment to i has the purpose of keeping the
 	 * C compiler in Ubuntu from complaining; we are only
-	 * interested in resetting the internal state of wctoms().
+	 * interested in resetting the internal state of wctomb().
 	 */
 	i = wctomb(NULL, 0);
 	up = unix_name;
@@ -1635,7 +1655,8 @@ is_ambigous(const char *name) {
 
 
 /*
- * get and check FCB address
+ * get and check FCB address (FCBs can be of different size, depending
+ * e.g. on whether they are used for random access functions or not)
  */
 static int
 get_fcb(int fcb_size, const char *caller) {
@@ -1659,7 +1680,7 @@ get_fcb(int fcb_size, const char *caller) {
 
 
 /*
- * get and check from fcb drive
+ * get and check drive from FCB
  */
 static int
 get_drive(int fcb, const char *caller) {
@@ -1742,6 +1763,9 @@ bdos_open_file(void) {
 		strcpy(unix_name, tp->name);
 		break;
 	}
+	/*
+	 * no matching file found?
+	 */
 	if (! tp) goto premature_exit;
 	/*
 	 * allocate and assemble file path
@@ -1841,8 +1865,8 @@ bdos_close_file(void) {
 	/*
 	 * some programs (e. g. dBase II) continue to use FCBs after
 	 * a call to close; therefore, there is a option to support
-	 * this
-	 * */
+	 * these programs by not actually closing the file
+	 */
 	if (dont_close) {
 		/*
 		 * just mark the file as flushed
@@ -1865,7 +1889,7 @@ bdos_close_file(void) {
 	 */
 	if (close(fdp->fd) == (-1)) {
 		/*
-		 * close failed: something is cleatly amiss
+		 * close failed: something is clearly amiss
 		 */
 		plog("%s (FCB 0x%04x): close(%s) failed: %s", func, fcb,
 		    fdp->path, strerror(errno));
@@ -1894,6 +1918,9 @@ premature_exit:
 }
 
 
+/*
+ * root of the search list used by bdos_search_for_first/next()
+ */
 static struct file_list *search_list_p = NULL;
 
 
@@ -1916,7 +1943,9 @@ return_direntry(void) {
 	if (! flp) goto premature_exit;
 	/*
 	 * construct a directory entry in the DMA area from the
-	 * first entry in the list
+	 * first entry in the list: the file entry is always in the
+	 * first 32 bytes of the DMA area, and the rest is initialized
+	 * to 0xe5 bytes (which mark unused directory entries)
 	 */
 	setup_fcb(flp->name, temp_fcb);
 	memset(memory + current_dma, 0, 32);
@@ -2218,7 +2247,7 @@ write_record(int fcb, struct file_data *fdp, const char *caller) {
 
 /*
  * seek to a particular offset in a Unix file (the offset is given in
- * CP/M records of 128 bytes
+ * CP/M records of 128 bytes)
  */
 static int
 seek(int fcb, struct file_data *fdp, int offset, const char *caller) {
@@ -2862,13 +2891,7 @@ bdos_read_random(void) {
 	/*
 	 * read 128 bytes to the current DMA buffer
 	 */
-	if (read_record(fcb, fdp, func) == (-1)) {
-		/*
-		 * report "reading unwritten data", i. e. EOF
-		 */
-		reg_a = 0x01;
-		goto premature_exit;
-	}
+	if (read_record(fcb, fdp, func) == (-1)) goto premature_exit;
 	/*
 	 * set sequential offset in FCB
 	 */
@@ -3162,13 +3185,26 @@ bdos_write_random_with_zero_fill(void) {
 static unsigned char
 read_scb(int offset) {
 	switch (offset) {
-	case 0x05: /* BDOS Version number */
+	case 0x05: /* BDOS version number */
+		/*
+		 * Returning 0x22 (CP/M 2.2) is consistent with tnylpo
+		 * striving for compatiblity with this system version.
+		 * But since the Get/Set SCB function is specific to
+		 * CP/M 3, maybe programs do not really expect to receive
+		 * this value...
+		 */
 		return 0x22;
 	case 0x10: /* program return code, low byte */
 		return (program_return_code & 0xff);
 	case 0x11: /* program return code, high byte */
 		return ((program_return_code >> 8) & 0xff);
 	case 0x1a: /* console columns - 1 */
+		/*
+		 * don't ask me why the number of columns - 1 is
+		 * returned here, while the number of lines is
+		 * reported without decrement... but this mimics the
+		 * behaviour of actual CP/M 3.
+		 */
 		return cols - 1;
 	case 0x1c: /* console lines */
 		return lines;
@@ -4005,7 +4041,7 @@ os_exit(void) {
 	struct file_data *fdp;
 	/*
 	 * return error if the application program set a program return
-	 * code in above 0xff00. The more detailed return code of CP/M
+	 * code in above 0xff00. The more detailed return code of CP/M 3
 	 * (0x0000..0xfeff: shades of success; 0xff00..0xfffe: shades
 	 * of failure) is simplified to just success or failure.
 	 */
