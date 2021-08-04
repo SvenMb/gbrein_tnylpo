@@ -7,7 +7,7 @@ Ubuntu 18.04.1 LTS amd64; CentOS 7; Slackware 14.2 i386),
 FreeBSD (12.0 amd64), NetBSD (9.0 amd64; 8.0 i386, sparc, vax),
 OpenBSD (6.4, 6.7 i386),
 Solaris (10 x86, 32 and 64 bit; 9 sparc, 32 bit; 9 x86; 7 sparc, 32 bit),
-and Mac OS X (10.5 ppc, 10.6, 10.9, 10.11, 10.13, 11 x86-64),
+and Mac OS X (10.5 ppc, 10.6, 10.9, 10.11, 10.13, 11 x86-64 and arm64),
 but should need little to no modifications to run under any other
 reasonably recent system. The companion program `tnylpo-convert`
 converts text files to and from the CP/M format.
