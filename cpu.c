@@ -1952,7 +1952,7 @@ static void
 inst_rrd(void) {
 	int t, hl = get_hl();
 	t = memory[hl];
-	memory[hl] = ((t >> 4) & 0x0f) | ((reg_a << 4) & 0x0f);
+	memory[hl] = ((t >> 4) & 0x0f) | ((reg_a << 4) & 0xf0);
 	reg_a = (reg_a & 0xf0) | (t & 0xf);
 	shift_flags(reg_a);
 }
