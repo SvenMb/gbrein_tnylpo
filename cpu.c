@@ -1833,7 +1833,7 @@ cpx(int up) {
 	bc = get_bc();
 	hl = get_hl();
 	t = sub8(reg_a, memory[hl], 0);
-	t += flag_h;
+	if (flag_h) t = t ? t - 1 : 0xff;
 	hl = up ? ((hl + 1) & 0xffff) : ((hl + 0xffff) & 0xffff);
 	bc = ((bc + 0xffff) & 0xffff);
 	set_bc(bc);
