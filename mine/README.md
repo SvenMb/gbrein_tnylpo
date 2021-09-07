@@ -35,7 +35,12 @@ tnylpo -f mine.conf mine
 ```
 `mine.conf` is an included `tnylpo` configuration file selecting the
 full screen console emulation and `tnylpo`'s proprietary eight-bit
-character set.
+character set. On an ASCII-only terminal, use the command
+```sh
+tnylpo -f mine_ascii.conf mine
+```
+instead; this will cause `tnylpo` to approximate the box drawing
+characters with ASCII symbols. 
 ## Can I use this program anywhere else?
 Sure, but you will have to modify it. Even though `mine` is a
 fairly standard CP/M-80 program, it uses features of the full screen
