@@ -138,8 +138,17 @@ Note for Solaris users: Since there is no standardized installation directory
 for the `ncurses` library under Solaris, you will have to modify
 `$(NCURSESROOT)` to reflect the place where `ncurses` lives
 on your system; likewise, depending on the compiler you use, you will
-have to adapt `$(CC)` and possibly `$(CFLAGS)`.
-
+have to adapt `$(CC)` and possibly `$(CFLAGS)`. To create e. g. a `tnylpo` binary
+optimized for a SparcClassic running Solaris 9 using the `ncurses` package from the
+[OpenCSW project](https://www.opencsw.org) and Sun's Forte Developer 7 C compiler,
+you should use these values:
+```make
+CC=/opt/SUNWspro/bin/cc
+CFLAGS=-xc99=%all -fast -xtarget=sslc
+NCURSESROOT=/opt/csw
+```
+Compiling will take about a quarter of an hour, and the resulting binary will
+definitely not be suitable for the impatient...
 ## How do I install it?
 Copy the resulting binaries `tnylpo` and `tnylpo-convert` to a
 directory in your `PATH`
