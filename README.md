@@ -82,7 +82,7 @@ commands, character attributes, VT100 box drawing characters, and
 color support)
 * shields CP/M programs from terminal window resizing
 * allows to combine CP/M programs with Unix shell redirections and pipelines.
-## What CP/M applications work with `tnylpo`?
+## Which CP/M applications work with `tnylpo`?
 All well-behaved CP/M 2.2 software (i.e. software conforming to the CP/M 2.2
 API and not using proprietary OS extensions, not accessing hardware directly,
 and refraining from BIOS based disk accesses) should function under `tnylpo`;
