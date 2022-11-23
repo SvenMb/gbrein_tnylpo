@@ -1,4 +1,8 @@
 # `tnylpo`
+
+be aware this is only a copy. You can find the original repositiory here:
+https://gitlab.com/gbrein/tnylpo/
+
 ## What is this?
 `tnylpo` allows the execution of programs written for CP/M-80
 version 2.2 under Unixy operating systems. It has been tested
